@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "tidypyspark"
+version = "0.0.1"
+description = "dplyr for pyspark"
+authors = ["Srikanth Komala sheshachala"]
+license = "GNU General Public License v3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
