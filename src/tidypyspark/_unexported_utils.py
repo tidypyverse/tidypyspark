@@ -3,12 +3,9 @@
 # Find the dev version here: https://github.com/talegari/tidypandas
 # -----------------------------------------------------------------------------
 import string
-
-import numpy as np
-import pandas as pd
 import inspect
-import pandas.api.types as dtypes
 import warnings
+import numpy as np
 
 def _is_kwargable(func):
     res = False
@@ -156,17 +153,6 @@ def _is_unique_list(x):
     assert isinstance(x, list)
     return len(set(x)) == len(x)
 
-def _get_dtype_dict(pdf):
-    assert isinstance(pdf, pd.DataFrame)
-    
-    dtf = (pd.DataFrame(pdf.dtypes)
-             .reset_index(drop = False)
-             .rename(columns = {'index': "column_name", 0: "dtype"})
-             .assign(dtype = lambda x: x['dtype'].astype('string'))
-             )
-    
-    return dict(zip(dtf['column_name'], dtf['dtype']))
-
 def _generate_new_string(strings):
     
     assert isinstance(strings, list)
@@ -178,48 +164,6 @@ def _generate_new_string(strings):
             break
     
     return random_string
-
-def _coerce_series(aseries):
-    '''
-    _coerce_series
-    Convert the series type to its nullable type
-    
-    Parameters
-    ----------
-    aseries: A pandas series
-    
-    Returns
-    -------
-    A pandas series
-    
-    Notes
-    -----
-    If series cannot infer the type, it will return the series asis.
-    '''
-    # first try
-    dt = str(aseries.convert_dtypes().dtype)
-    
-    # second try by dropping NA
-    if dt == "object":
-        dt = str(aseries.dropna().convert_dtypes().dtype)
-    
-    # warn if type cannot be detected        
-    if dt == "object":
-        warnings.warn(f"Could not infer the dtype, left asis")
-    
-    # return asis if not detected
-    if dt == "object":
-        ser = aseries
-    else:
-        ser = aseries.astype(dt)
-    
-    return ser
-
-
-def _coerce_pdf(pdf):
-    for acol in list(pdf.columns):
-        pdf[acol] = _coerce_series(pdf[acol])
-    return pdf
 
 def _is_nested(x):
     assert isinstance(x, (list, tuple, set)) or np.isscalar(x)

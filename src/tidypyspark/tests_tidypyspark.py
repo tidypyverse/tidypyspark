@@ -2,8 +2,7 @@
 # Test tidypyspark code
 ################################################################################
 
-path_tps = "/Users/s0k06e8/personal/tidypyspark.py"
-exec(open(path_tps).read())
+import tidypyspark as ts
 
 # start spark session ----
 from pyspark.sql import SparkSession
@@ -11,11 +10,20 @@ import pyspark.sql.functions as F
 spark = SparkSession.builder.getOrCreate()
 
 # test code ----
-md_chunk = spark.read.parquet("md_chunk.parquet")
-md_chunk.show(6)
+pen = spark.read.csv("pen.csv", header = True).drop("_c0")
+pen.show(6)
+
+
+pen.ts.add_row_number('bill_length_mm').filter().show(10)
+
+(pen.ts.add_row_number('species', by = 'species')
+    .filter(F.col('row_number') <= 2)
+    .drop('row_number')
+    .ts.add_group_number('species', name = 'gn')
+    .show(10)
+    )
 
 # test: add_row_number
-
 (md_chunk.ts.add_row_number(order_by = 'current_inventory',
                             by = 'system_item_nbr'
                             )
@@ -42,6 +50,8 @@ md_chunk.show(6)
          )
 
 md_chunk.ts.add_row_number(order_by = [('md_start_date', 'desc')]).show(6)
+# md_chunk.withColumn('rn', F.row_number().over(Window.orderby(col('A').desc())))
+
 md_chunk.ts.add_row_number(order_by = 'md_start_date',
                            by = 'system_item_nbr'
                            ).show(6)
