@@ -1,7 +1,7 @@
-# -----------------------------------------------------------------------------
-# This file is a part of tidypandas python package
-# Find the dev version here: https://github.com/talegari/tidypandas
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+# This file is a part of tidypyspark python package
+# Find the dev version here: https://github.com/talegari/tidypyspark
+# ----------------------------------------------------------------------------
 import string
 import inspect
 import warnings
