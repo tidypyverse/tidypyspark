@@ -7,8 +7,8 @@ import warnings
 import pyspark
 import pyspark.sql.functions as F
 from pyspark.sql.window import Window
-from accessor_class import register_dataframe_accessor
-from _unexported_utils import (
+from tidypyspark.accessor_class import register_dataframe_accessor
+from tidypyspark._unexported_utils import (
                               _is_kwargable,
                               _is_valid_colname,
                               _is_string_or_string_list,
@@ -557,6 +557,48 @@ class acc_on_pyspark():
             
     return res
   
+  def summarise(self, dictionary, by = None):
+    '''
+    mutate
+    Create new column or modify existing columns
+
+    Parameters
+    ----------
+    dictionary : dict
+      key should be new/existing column name. 
+      Value should is pyspark expression that should evaluate to a column
+    window_spec : pyspark.sql.window.WindowSpec, optional
+      The default is None.
+    **kwargs : Supports these: by, order_by, range_between, rows_between.
+
+    Returns
+    -------
+    pyspark dataframe
+      
+    Examples
+    --------
+    (pen.ts.mutate({'bl_+_1': F.col('bill_length_mm') + 1,
+                     'bl_+_1_by_2': F.col('bl_+_1') / 2})
+        .show(10)
+        )
+    
+    # grouped and order mutate operation
+    (pen.ts.add_row_number(order_by = 'bill_depth_mm')
+        .ts.mutate({'cumsum_bl': F.sum('bill_length_mm')},
+                   by = 'species',
+                   order_by = ['bill_depth_mm', 'row_number'],
+                   range_between = (-float('inf'), 0)
+                   )
+        .ts.select(['bill_length_mm',
+                    'species',
+                    'bill_depth_mm',
+                    'cumsum_bl'
+                    ])
+        .show(10)
+        )
+    
+    '''
+    
   # joins --------------------------------------------------------------------
   def join(self, pyspark_df, on = None, sql_on = None):
     '''
