@@ -1,25 +1,73 @@
-# tidypyspark
+tidypyspark development plan
+----------------------------
 
-dplyr for pyspark
+attributes
+----------
+nrow, ncol, colnames, dim, shape
 
-## Installation
+basic methods
+--------------
 
-```bash
-$ pip install tidypyspark
-```
+- [] add_row_number
+- [] add_group_number
 
-## Usage
+- [x] select
+- [x] arrange
+- [x] distinct
+- [x] mutate
+- [ ] summarise (Sr)
+- [ ] relocate (check if this physically moves data, soft signal: no) (Su)
+- [ ] rename (Su)
+- [ ] filter ( df.filter((lhs, ">", rhs), by = ) ) **pondering**
 
-- TODO
 
-## Contributing
 
-Interested in contributing? Check out the contributing guidelines. Please note that this project is released with a Code of Conduct. By contributing to this project, you agree to abide by its terms.
+to methods
+----------
+- [ ] to_pandas (Su)
 
-## License
+pipe methods
+------------
+- [ ] pipe (Sr)
+- [ ] pipe_tee (Sr)
 
-`tidypyspark` was created by Srikanth Komala sheshachala. It is licensed under the terms of the GNU General Public License v3.0 license.
+- [ ] glimpse (Sr)
+    - take first few rows, convert to tidypandas and then call glimpse
 
-## Credits
 
-`tidypyspark` was created with [`cookiecutter`](https://cookiecutter.readthedocs.io/en/latest/) and the `py-pkgs-cookiecutter` [template](https://github.com/py-pkgs/py-pkgs-cookiecutter).
+Join methods (Ja)
+------------
+- [ ] join
+- [ ] inner, outer/full, left, right
+- [ ] semi, anti
+- [ ] cross
+
+Bind methods (Sr)
+------------
+
+- [ ] rbind, cbind
+
+pivot methods (Ja)
+-------------
+
+- [ ] pivot_wider
+- [ ] pivot_longer
+
+
+
+Count methods (Sr)
+-------------
+- [ ] count
+- [ ] add_count
+
+slice methods
+-------------
+
+- [ ] slice_sample
+- [ ] slice_min (Su)
+- [ ] slice_max
+
+Lower priority things
+---------------------
+Enhance _create_windowspec (Suyash)
+Support group apply (Suyash)
