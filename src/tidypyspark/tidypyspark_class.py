@@ -559,17 +559,17 @@ class acc_on_pyspark():
   
   def summarise(self, dictionary, by = None):
     '''
-    mutate
-    Create new column or modify existing columns
+    summarise
+    Create aggreagate columns
 
     Parameters
     ----------
     dictionary : dict
-      key should be new/existing column name. 
-      Value should is pyspark expression that should evaluate to a column
-    window_spec : pyspark.sql.window.WindowSpec, optional
-      The default is None.
-    **kwargs : Supports these: by, order_by, range_between, rows_between.
+      key should be column name. 
+      Value should is pyspark expression that should produce a single
+      aggregation value
+    by : string or list of strings
+      Column names to group by
 
     Returns
     -------
@@ -577,27 +577,35 @@ class acc_on_pyspark():
       
     Examples
     --------
-    (pen.ts.mutate({'bl_+_1': F.col('bill_length_mm') + 1,
-                     'bl_+_1_by_2': F.col('bl_+_1') / 2})
+    # ungrouped summarise
+    (pen.ts.summarise({'mean_bl': F.mean(F.col('bill_length_mm')),
+                       'count_species': F.count(F.col('species'))
+                      }
+                     )
         .show(10)
         )
     
-    # grouped and order mutate operation
-    (pen.ts.add_row_number(order_by = 'bill_depth_mm')
-        .ts.mutate({'cumsum_bl': F.sum('bill_length_mm')},
-                   by = 'species',
-                   order_by = ['bill_depth_mm', 'row_number'],
-                   range_between = (-float('inf'), 0)
-                   )
-        .ts.select(['bill_length_mm',
-                    'species',
-                    'bill_depth_mm',
-                    'cumsum_bl'
-                    ])
+    # grouped summarise
+    (pen.ts.summarise({'mean_bl': F.mean(F.col('bill_length_mm')),
+                       'count_species': F.count(F.col('species'))
+                      },
+                      by = 'island'
+                     )
         .show(10)
         )
-    
     '''
+    
+    agg_list = [tup[1].alias(tup[0]) for tup in dictionary.items()]
+    
+    if by is None:
+      res = self.__data.agg(*agg_list)
+    else:
+      by = self._clean_by(by)
+      res = self.__data.groupBy(*by).agg(*agg_list)
+    
+    return res
+  
+  summarize = summarise
     
   # joins --------------------------------------------------------------------
   def join(self, pyspark_df, on = None, sql_on = None):
