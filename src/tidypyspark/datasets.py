@@ -6,4 +6,4 @@ def get_penguins_path():
   '''
   with resources.path("tidypyspark.data", "pen.csv") as f:
       data_file_path = f
-  return data_file_path
+  return str(data_file_path)
