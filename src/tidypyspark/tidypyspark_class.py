@@ -2,12 +2,30 @@
 # This file is a part of tidypyspark python package
 # Find the dev version here: https://github.com/talegari/tidypyspark
 # ------------------------------------------------------------------------------
+##setup code
+'''
+from tidypyspark.datasets import get_penguins_path
+import tidypyspark.tidypyspark_class as ts
+from pyspark.sql import SparkSession
+#Create PySpark SparkSession
+spark = SparkSession.builder \
+            .master("local[1]") \
+            .appName("SparkByExamples.com") \
+            .getOrCreate()
+path_peng = get_penguins_path()
+pen = spark.read.csv(path_peng, header = True).drop('_c0')
 
+
+'''
+
+
+# ---------------------------------------------------------------------
 import warnings
 import pyspark
 import pyspark.sql.functions as F
 from pyspark.sql.window import Window
 from tidypyspark.accessor_class import register_dataframe_accessor
+import numpy as np
 from tidypyspark._unexported_utils import (
                               _is_kwargable,
                               _is_valid_colname,
@@ -59,8 +77,8 @@ class acc_on_pyspark():
   @property
   def dim(self):
     return (self.nrow, self.ncol)
-      
-  # cleaners --------------------------------------------------------------
+
+# cleaners --------------------------------------------------------------
   
   def _clean_by(self, by):
     '''
@@ -486,7 +504,152 @@ class acc_on_pyspark():
       res = res.select(*cn)
     
     return res
-  
+
+  def to_pandas(self):
+    '''
+    to_pandas
+    Converts spark dataframe to pandas dataframe
+
+    Parameters
+    ----------
+    None
+
+    Examples
+    --------
+    (pen.ts.to_pandas()
+    .show(10)
+    )
+
+    '''
+    return self.__data.toPandas()
+
+  def rename(self, old_new_dict=None, predicate=None, func=None):
+      '''
+      Rename columns of the pyspark dataframe
+
+      Parameters
+      ----------
+      old_new_dict: dict
+          A dict with old names as keys and new names as values
+
+      Returns
+      -------
+      pyspark dataframe
+
+      Examples
+      --------
+        pen.ts.rename({'species': 'species_2'})
+      '''
+      cn = self.colnames
+
+      if (old_new_dict is None):
+          raise Exception("provide  atleast one column to change")
+
+
+      assert isinstance(old_new_dict, dict), \
+          "arg 'old_new_dict' should be a dict"
+      assert set(cn).issuperset(old_new_dict.keys()), \
+          "keys of the input dict should be existing column names"
+      assert _is_string_or_string_list(list(old_new_dict.values())), \
+          "values of the dict should be strings"
+      assert _is_unique_list(list(old_new_dict.values())), \
+          "values of the dict should be unique"
+
+
+      # new names should not intersect with 'remaining' names
+      remaining = set(cn).difference(old_new_dict.keys())
+      assert len(remaining.intersection(old_new_dict.values())) == 0, \
+          ("New intended column names (values of the dict) lead to duplicate "
+           "column names"
+           )
+
+      if len(old_new_dict)>0:
+          return self.__data.select([F.col(c).alias(old_new_dict.get(c, c)) for c in self.colnames])
+      else:
+          return self.__data
+
+
+
+  def relocate(self, column_names, before = None, after = None):
+      '''
+      relocate the columns of the pyspark dataframe
+
+      Parameters
+      ----------
+      column_names : string or a list of strings
+          column names to be moved
+      before : string, optional
+          column before which the column are to be moved. The default is None.
+      after : TYPE, optional
+          column after which the column are to be moved. The default is None.
+
+
+      Returns
+      -------
+      pyspark dataframe
+
+      Notes
+      -----
+      Only one among 'before' and 'after' can be not None. When both are None,
+      the columns are added to the begining of the dataframe (leftmost)
+
+      Examples
+      --------
+
+
+        # move "island" and "species" columns to the left of the dataframe
+        pen.ts.relocate(["island", "species"])
+
+        # move "sex" and "year" columns to the left of "island" column
+        pen.ts.relocate(["sex", "year"], before = "island")
+
+         # move "island" and "species" columns to the right of "year" column
+        pen.ts.relocate(["island", "species"], after = "year")
+      '''
+      column_names = self._clean_column_names(column_names)
+      cn = self.colnames
+
+      cn = self.colnames
+      col_not_relocate = [i for i in cn if i not in column_names]
+
+      assert not ((before is not None) and (after is not None)), \
+          "Atleast one arg among 'before' and 'after' should be None"
+
+      if after is not None:
+          assert isinstance(after, str), \
+              "arg 'after' should be a string"
+          assert after in cn, \
+              "arg 'after' should be a exisiting column name"
+          assert not (after in column_names), \
+              "arg 'after' should be an element of 'column_names'"
+
+      if before is not None:
+          assert isinstance(before, str), \
+              "arg 'before' should be a string"
+          assert before in cn, \
+              "arg 'before' should be a exisiting column name"
+          assert not (before in column_names), \
+              "arg 'before' should be an element of 'column_names'"
+
+      # case 1: relocate to start when both before and after are None
+      if (before is None) and (after is None):
+          col_sequence = column_names + list(col_not_relocate)
+      elif (before is not None):
+          # case 2: before is not None
+          col_sequence = col_not_relocate[0:col_not_relocate.index(before)] + \
+                          column_names + \
+                          col_not_relocate[col_not_relocate.index(before):]
+
+      else:
+          # case 3: after is not None
+          after_index = col_not_relocate.index(after)
+          col_sequence = col_not_relocate[0:after_index+1] + \
+                         column_names + \
+                         col_not_relocate[after_index+1:]
+
+      res = self.__data.select(col_sequence)
+      return res
+
   def mutate(self, dictionary, window_spec = None, **kwargs):
     '''
     mutate
