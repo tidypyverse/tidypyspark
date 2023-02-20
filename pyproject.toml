@@ -2,13 +2,14 @@
 name = "tidypyspark"
 version = "0.0.1"
 description = "dplyr for pyspark"
-authors = ["Srikanth Komala sheshachala"]
+authors = ["Srikanth Komala sheshachala", "Suyash Garg"]
 license = "GNU General Public License v3.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"
 numpy = "^1.24.2"
+pandas = "^1.5.3"
 pyspark = "^3.3.1"
 
 [tool.poetry.dev-dependencies]
