@@ -79,7 +79,7 @@ python-versions = "*"
 
 [[package]]
 name = "pyspark"
-version = "3.3.1"
+version = "3.3.2"
 description = "Apache Spark Python API"
 category = "main"
 optional = false
@@ -125,7 +125,7 @@ python-versions = ">=3.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "01f373d83ca8f4eacab8d754c2c5ff18cd6586888d4eaafe5c56c56f3adbf4f1"
+content-hash = "6f0479f78ee9028d5d7f8b4734506ebb847a1d89233e6ea7b91bffc898522e05"
 
 [metadata.files]
 attrs = []

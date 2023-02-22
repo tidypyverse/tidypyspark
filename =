@@ -1,0 +1,16 @@
+Using version ^1.5.3 for pandas
+
+  ValueError
+
+  Could not find a matching version of package 1.0.0
+
+  at /opt/miniconda3/envs/env_tidypyspark/lib/python3.10/site-packages/poetry/console/commands/init.py:367 in _find_best_version_for_package
+      363│         )
+      364│ 
+      365│         if not package:
+      366│             # TODO: find similar
+    → 367│             raise ValueError(
+      368│                 "Could not find a matching version of package {}".format(name)
+      369│             )
+      370│ 
+      371│         return package.pretty_name, selector.find_recommended_require_version(package)
