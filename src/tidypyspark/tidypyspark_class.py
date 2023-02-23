@@ -653,34 +653,117 @@ class acc_on_pyspark():
     return res
   
   # count methods ------------------------------------------------------------
-  def count(self, column_names, name = 'n'):
+  def count(self, column_names, name = 'n', wt = None):
     '''
-    TODO -- srikanth
+    count
+    Count unique combinations of columns
 
     Parameters
     ----------
-    column_names : TYPE
-      DESCRIPTION.
-    name : TYPE, optional
-      DESCRIPTION. The default is 'n'.
+    column_names : string or list of strings
+      Names of columns
+    name : string, optional
+      Name of the count column to be created (should not be an existing
+      name). The default is 'n'.
+    wt: string, optional
+      Name of the weight column. The default is None. When None, the number of
+      rows is counted
 
     Returns
     -------
-    res : TYPE
-      DESCRIPTION.
-
+    pyspark dataframe
+    
+    Examples
+    --------
+    pen.ts.count(['species', 'sex']).show()
+    pen.ts.count('species', name = 'cnt').show()
+    pen.ts.count('species', wt = 'body_mass_g').show()
     '''
     cn = self._clean_column_names(column_names)
     
     assert isinstance(name, str),\
-        "'name' should be a string"
+      "'name' should be a string"
     assert name not in column_names,\
-        "'name' should not be a element of 'column_names'"
+      "'name' should not be an element of 'column_names'"
+    
+    if wt is not None:
+      assert isinstance(wt, str),\
+        "'wt' should be a string"
+      assert (wt in self.colnames) and (wt not in cn),\
+        "'wt' should be an existing column name and not in 'column_names'"
+    
+    if wt is None:
+      res = (self.__data
+                 .select(*cn)
+                 .withColumn(name, F.lit(1))
+                 .groupby(*cn)
+                 .agg(F.sum(F.col(name)).alias(name))
+                 )
+    else:
+      cn_with_wt = cn + [wt]
+      res = (self.__data
+                 .select(*cn_with_wt)
+                 .groupby(*cn)
+                 .agg(F.sum(F.col(wt)).alias(name))
+                 )
+      
+    return res
+
+  def add_count(self, column_names, name = 'n', wt = None):
+    '''
+    add_count
+    Add a column of counts of unique combinations of columns
+  
+    Parameters
+    ----------
+    column_names : string or list of strings
+      Names of columns
+    name : string, optional
+      Name of the count column to be created (should not be an existing
+      name). The default is 'n'.
+    wt: string, optional
+      Name of the weight column. The default is None. When None, the number of
+      rows is counted
+      
+    Returns
+    -------
+    pyspark dataframe
+    
+    Examples
+    --------
+    pen.ts.add_count(['species', 'sex']).show()
+    pen.ts.add_count('species', name = 'cnt').show()
+    pen.ts.add_count('species', wt = 'body_mass_g').show()
+    '''
+    cn = self._clean_column_names(column_names)
+    
+    assert isinstance(name, str),\
+      "'name' should be a string"
+    assert name not in self.colnames,\
+      "'name' should not be an existing column name"
+    
+    if wt is not None:
+      assert isinstance(wt, str),\
+        "'wt' should be a string"
+      assert (wt in self.colnames) and (wt not in cn),\
+        "'wt' should be an existing column name and not in 'column_names'"
+    
+    if wt is None:
+      res = (self.__data
+                 .select(*cn)
+                 .withColumn(name, F.lit(1))
+                 .groupby(*cn)
+                 .agg(F.sum(F.col(name)).alias(name))
+                 )
+    else:
+      cn_with_wt = cn + [wt]
+      res = (self.__data
+                 .select(*cn_with_wt)
+                 .groupby(*cn)
+                 .agg(F.sum(F.col(wt)).alias(name))
+                 )
     
     res = (self.__data
-               .select(*cn)
-               .withColumn(name, F.lit(1))
-               .groupby(*cn)
-               .agg(F.sum(F.col(name)).alias(name))
+               .join(res, on = cn, how = "left")
                )
     return res
