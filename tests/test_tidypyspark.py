@@ -45,7 +45,6 @@ def test_rename(penguins_data):
     import pyspark.sql.functions as F
     spark = SparkSession.builder.getOrCreate()
     import pyspark
-    import pandas as pd
     pen = spark.read.csv(penguins_data, header=True).drop("_c0")
     res = pen.ts.rename({'species': 'species_2'})
     cns = res.ts.colnames
