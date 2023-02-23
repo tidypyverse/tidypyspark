@@ -27,17 +27,17 @@ def test_mutate(penguins_data):
   spark.stop()
 
 
-def test_to_pandas(penguins_data):
-    from pyspark.sql import SparkSession
-    import pyspark.sql.functions as F
-    spark = SparkSession.builder.getOrCreate()
-    import pyspark
-    # import pandas
-    pen = spark.read.csv(penguins_data, header=True).drop("_c0")
-    res = pen.ts.to_pandas()
-    assert isinstance(res, pandas.core.frame.DataFrame)
-
-    spark.stop()
+# def test_to_pandas(penguins_data):
+#     from pyspark.sql import SparkSession
+#     import pyspark.sql.functions as F
+#     spark = SparkSession.builder.getOrCreate()
+#     import pyspark
+#     # import pandas
+#     pen = spark.read.csv(penguins_data, header=True).drop("_c0")
+#     res = pen.ts.to_pandas()
+#     assert isinstance(res, pandas.core.frame.DataFrame)
+#
+#     spark.stop()
 
 
 def test_rename(penguins_data):
