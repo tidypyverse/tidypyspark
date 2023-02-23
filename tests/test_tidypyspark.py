@@ -19,7 +19,6 @@ def test_mutate(penguins_data):
                         'bl_+_1_by_2': F.col('bl_+_1') / 2}
                        )
          )
-         
   assert isinstance(res, pyspark.sql.dataframe.DataFrame)
   cns = res.ts.colnames
   assert set(['bl_+_1', 'bl_+_1_by_2']).issubset(cns)
@@ -61,7 +60,31 @@ def is_sublist(subset_list, full_list):
                 return False
         return True
     return False
-def test_relocate(penguins_data):
+def test_relocate_after(penguins_data):
+    from pyspark.sql import SparkSession
+    import pyspark.sql.functions as F
+    spark = SparkSession.builder.getOrCreate()
+    import pyspark
+    pen = spark.read.csv(penguins_data, header=True).drop("_c0")
+    res = pen.ts.relocate(["island", "species"], after = "year")
+    cns = res.ts.colnames
+    assert isinstance(res, pyspark.sql.dataframe.DataFrame)
+    assert is_sublist(["year", "island", "species"],  cns)
+    spark.stop()
+
+def test_relocate_before(penguins_data):
+    from pyspark.sql import SparkSession
+    import pyspark.sql.functions as F
+    spark = SparkSession.builder.getOrCreate()
+    import pyspark
+    pen = spark.read.csv(penguins_data, header=True).drop("_c0")
+    res = pen.ts.relocate(["island", "species"], before = "year")
+    cns = res.ts.colnames
+    assert isinstance(res, pyspark.sql.dataframe.DataFrame)
+    assert is_sublist(["island", "species","year"],  cns)
+    spark.stop()
+
+def test_relocate3(penguins_data):
     from pyspark.sql import SparkSession
     import pyspark.sql.functions as F
     spark = SparkSession.builder.getOrCreate()
@@ -71,9 +94,8 @@ def test_relocate(penguins_data):
     cns = res.ts.colnames
     print(cns)
     assert isinstance(res, pyspark.sql.dataframe.DataFrame)
-    assert is_sublist(["year", "island", "species"],  cns)
+    assert is_sublist(["island", "species"],  cns)
     spark.stop()
-
 
 def test_summarise(penguins_data):
   
