@@ -66,7 +66,6 @@ def test_relocate(penguins_data):
     import pyspark.sql.functions as F
     spark = SparkSession.builder.getOrCreate()
     import pyspark
-    import pandas as pd
     pen = spark.read.csv(penguins_data, header=True).drop("_c0")
     res = pen.ts.relocate(["island", "species"], after = "year")
     cns = res.ts.colnames

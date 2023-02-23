@@ -505,23 +505,23 @@ class acc_on_pyspark():
     
     return res
 
-  def to_pandas(self):
-    '''
-    to_pandas
-    Converts spark dataframe to pandas dataframe
-
-    Parameters
-    ----------
-    None
-
-    Examples
-    --------
-    (pen.ts.to_pandas()
-    .show(10)
-    )
-
-    '''
-    return self.__data.toPandas()
+  # def to_pandas(self):
+  #   '''
+  #   to_pandas
+  #   Converts spark dataframe to pandas dataframe
+  #
+  #   Parameters
+  #   ----------
+  #   None
+  #
+  #   Examples
+  #   --------
+  #   (pen.ts.to_pandas()
+  #   .show(10)
+  #   )
+  #
+  #   '''
+  #   return self.__data.toPandas()
 
   def rename(self, old_new_dict=None, predicate=None, func=None):
       '''
