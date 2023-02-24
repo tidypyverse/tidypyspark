@@ -1,7 +1,7 @@
 import pytest
 from tidypyspark.datasets import get_penguins_path
 import tidypyspark.tidypyspark_class as ts
-
+from tidypyspark._unexported_utils import _is_perfect_sublist
 
 @pytest.fixture
 def penguins_data():
@@ -25,20 +25,6 @@ def test_mutate(penguins_data):
   
   spark.stop()
 
-
-# def test_to_pandas(penguins_data):
-#     from pyspark.sql import SparkSession
-#     import pyspark.sql.functions as F
-#     spark = SparkSession.builder.getOrCreate()
-#     import pyspark
-#     # import pandas
-#     pen = spark.read.csv(penguins_data, header=True).drop("_c0")
-#     res = pen.ts.to_pandas()
-#     assert isinstance(res, pandas.core.frame.DataFrame)
-#
-#     spark.stop()
-
-
 def test_rename(penguins_data):
     from pyspark.sql import SparkSession
     import pyspark.sql.functions as F
@@ -52,49 +38,30 @@ def test_rename(penguins_data):
     assert ['species'] not in cns
     spark.stop()
 
-def is_sublist(subset_list, full_list):
-    if subset_list[0] in full_list:
-        start_index = full_list.index(subset_list[0])
-        for i in range(len(subset_list)):
-            if full_list[start_index+i] != subset_list[i]:
-                return False
-        return True
-    return False
-def test_relocate_after(penguins_data):
+def test_relocate(penguins_data):
     from pyspark.sql import SparkSession
     import pyspark.sql.functions as F
     spark = SparkSession.builder.getOrCreate()
     import pyspark
     pen = spark.read.csv(penguins_data, header=True).drop("_c0")
+
+    #testing after clause
     res = pen.ts.relocate(["island", "species"], after = "year")
     cns = res.ts.colnames
-    assert isinstance(res, pyspark.sql.dataframe.DataFrame)
-    assert is_sublist(["year", "island", "species"],  cns)
-    spark.stop()
+    assert isinstance(res, pyspark.sql.dataframe.DataFrame), "before clause failed 1"
+    assert _is_perfect_sublist(["year", "island", "species"],  cns), "after clause failed 2"
 
-def test_relocate_before(penguins_data):
-    from pyspark.sql import SparkSession
-    import pyspark.sql.functions as F
-    spark = SparkSession.builder.getOrCreate()
-    import pyspark
-    pen = spark.read.csv(penguins_data, header=True).drop("_c0")
+    #testing before clause
     res = pen.ts.relocate(["island", "species"], before = "year")
     cns = res.ts.colnames
-    assert isinstance(res, pyspark.sql.dataframe.DataFrame)
-    assert is_sublist(["island", "species","year"],  cns)
-    spark.stop()
+    assert isinstance(res, pyspark.sql.dataframe.DataFrame), "before clause failed 1"
+    assert _is_perfect_sublist(["island", "species","year"],  cns), "before clause failed 2"
 
-def test_relocate3(penguins_data):
-    from pyspark.sql import SparkSession
-    import pyspark.sql.functions as F
-    spark = SparkSession.builder.getOrCreate()
-    import pyspark
-    pen = spark.read.csv(penguins_data, header=True).drop("_c0")
-    res = pen.ts.relocate(["island", "species"], after = "year")
+    #testing without before-after clause
+    res = pen.ts.relocate(["bill_length_mm","bill_depth_mm"])
     cns = res.ts.colnames
-    print(cns)
-    assert isinstance(res, pyspark.sql.dataframe.DataFrame)
-    assert is_sublist(["island", "species"],  cns)
+    assert isinstance(res, pyspark.sql.dataframe.DataFrame), "without before-after clause failed 1"
+    assert _is_perfect_sublist(["bill_length_mm","bill_depth_mm", "species"],  cns), "without before-after clause failed 2"
     spark.stop()
 
 def test_summarise(penguins_data):

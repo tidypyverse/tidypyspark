@@ -200,3 +200,12 @@ def _nested_is_unique(x):
                 "Each element of the nested structure should be a string"
             res = res + list(ele)
     return (len(res) == len(set(res)))
+
+def _is_perfect_sublist(subset_list, full_list):
+    if subset_list[0] in full_list:
+        start_index = full_list.index(subset_list[0])
+        for i in range(len(subset_list)):
+            if full_list[start_index+i] != subset_list[i]:
+                return False
+        return True
+    return False
