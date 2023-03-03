@@ -892,3 +892,43 @@ class acc_on_pyspark():
                .join(res, on = cn, how = "left")
                )
     return res
+  
+  # pipe methods -------------------------------------------------------------
+  def pipe(self, func, *args, **kwargs):
+    '''
+    pipe
+    returns func(self, ...)
+    
+    Parameters
+    ----------
+    func: callable
+      function to call
+    *args : args
+    **kwargs : kwargs
+    
+    Return
+    ------
+    Depends on func
+    '''
+    assert callable(func)
+    return func(self.__data, *args, **kwargs)
+  
+  def pipe_tee(self, func, *args, **kwargs):
+    '''
+    pipe_tee
+    use pipe for side-effect and return input
+
+    Parameters
+    ----------
+    func: callable
+      function to call
+    *args : args
+    **kwargs : kwargs
+
+    Returns
+    -------
+    Input pyspark dataframe
+    '''
+    assert callable(func)
+    func(self.__data, *args, **kwargs) # side-effect
+    return self.__data

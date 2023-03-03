@@ -170,3 +170,18 @@ def test_count(penguins_data):
   assert isinstance(res, pyspark.sql.dataframe.DataFrame)
   
   spark.stop()
+  
+def test_pipe_tee(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  
+  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  res = pen.ts.pipe_tee(
+    lambda x: x.select(['species', 'bill_length_mm']).show(6)
+    )
+  assert isinstance(res, pyspark.sql.dataframe.DataFrame)
+  assert res == pen
+  
+  spark.stop()
