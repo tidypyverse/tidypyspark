@@ -52,8 +52,14 @@ Count methods (Sr)
 slice methods
 -------------
 - [ ] slice_sample (Sr)
-- [ ] slice_min (Su)
-- [ ] slice_max (Su)
+- [x] slice_min (Sr)
+- [x] slice_max (Sr)
+
+na methods
+------------
+- [ ] drop_na (Sr)
+- [ ] replace_na (Sr)
+- [ ] fill_na (Sr)
 
 Lower priority things
 ---------------------
