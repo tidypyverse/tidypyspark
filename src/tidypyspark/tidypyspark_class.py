@@ -130,9 +130,10 @@ class acc_on_pyspark():
           (f'First element of the input tuple should be a string. '
            f'Input: {x}'
            )
-        if x[1] not in ['asc', 'desc']:
+        allowed = ['asc', 'desc', 'asc_null_first', 'desc_nulls_first']
+        if x[1] not in allowed:
           raise Exception((f'Second element of the input tuple should '
-                           f'one among: ["asc", "desc"]. '
+                           f'one among: {allowed}. '
                            f'Input: {x}'
                            ))
         
@@ -142,9 +143,13 @@ class acc_on_pyspark():
            )
           
         if x[1] == 'asc':
-          order_by[id] = F.col(x[0]).asc()
+          order_by[id] = F.col(x[0]).asc_nulls_last()
+        elif x[1] == 'asc_nulls_first':
+          order_by[id] = F.col(x[0]).asc_nulls_first()
+        elif x[1] == 'desc':
+          order_by[id] = F.col(x[0]).desc_nulls_last()
         else:
-          order_by[id] = F.col(x[0]).desc()
+          order_by[id] = F.col(x[0]).desc_nulls_first()
       
       # case 2: string
       # prototypes:
@@ -154,7 +159,7 @@ class acc_on_pyspark():
           (f'String input to order_by should be a valid column name. '
            f'Input: {x}'
            )
-        order_by[id] = F.col(x)
+        order_by[id] = F.col(x).asc_nulls_last()
       
       else:
         raise Exception(("An element of 'order_by' should be a tuple or "
@@ -224,7 +229,8 @@ class acc_on_pyspark():
           (f'First element of the input tuple should be a string. '
            f'Input: {x}'
            )
-        if x[1] not in ['asc', 'desc']:
+        allowed = ['asc', 'desc', 'asc_null_first', 'desc_nulls_first']
+        if x[1] not in allowed:
           raise Exception((f'Second element of the input tuple should one '
                            f'among: ["asc", "desc"]. '
                            f'Input: {x}'
@@ -932,3 +938,136 @@ class acc_on_pyspark():
     assert callable(func)
     func(self.__data, *args, **kwargs) # side-effect
     return self.__data
+  
+  # slice min and max methods -----------------------------------------------
+  def slice_min(self,
+                n,
+                order_by_column,
+                with_ties = True, 
+                by = None
+                ):
+    '''
+    slice_min
+    Subset top rows ordered by some column
+
+    Parameters
+    ----------
+    n : int
+      Number of rows to subset
+    order_by_column : string
+      Name of the column to order by in ascending nulls to last
+    with_ties : bool, optional
+      Whether to return all rows when ordering results in ties.
+      The default is True.
+    by : string or list of strings, optional
+      column(s) to group by. The default is None.
+
+    Returns
+    -------
+    pyspark dataframe
+    
+    Details
+    -------
+    The ordering always keeps null to last
+    
+    Examples
+    --------
+    pen.ts.slice_min(n = 2,
+                     order_by_column = 'bill_depth_mm',
+                     with_ties = False,
+                     by = ['species', 'sex']
+                     )
+    '''
+    
+    assert isinstance(n, int) and n > 0,\
+      "n should be a positive integer"
+    order_by_spec = self._clean_order_by((order_by_column, 'asc'))
+    assert isinstance(with_ties, bool)
+    
+    # create windowspec
+    if by is None:
+      win = self._create_windowspec(order_by = order_by_spec)
+    else:
+      by = self._clean_by(by)
+      win = self._create_windowspec(order_by = order_by_spec, by = by)
+    
+    # decide on ranking function
+    if with_ties:
+      rank_func = F.dense_rank()
+    else:
+      rank_func = F.row_number()
+    
+    # core
+    res = (self.__data
+               .withColumn('_rn', rank_func.over(win))
+               .filter(F.col('_rn') <= n)
+               .drop('_rn')
+               )
+    
+    return res
+    
+  def slice_max(self,
+                n,
+                order_by_column,
+                with_ties = True, 
+                by = None
+                ):
+    '''
+    slice_max
+    Subset top rows ordered by some column
+
+    Parameters
+    ----------
+    n : int
+      Number of rows to subset
+    order_by_column : string
+      Name of the column to order by in descending nulls to last
+    with_ties : bool, optional
+      Whether to return all rows when ordering results in ties.
+      The default is True.
+    by : string or list of strings, optional
+      column(s) to group by. The default is None.
+
+    Returns
+    -------
+    pyspark dataframe
+    
+    Details
+    -------
+    The ordering always keeps null to last
+    
+    Examples
+    --------
+    pen.ts.slice_max(n = 2,
+                     order_by_column = 'bill_depth_mm',
+                     with_ties = False,
+                     by = ['species', 'sex']
+                     )
+    '''
+    assert isinstance(n, int) and n > 0,\
+      "n should be a positive integer"
+    order_by_spec = self._clean_order_by((order_by_column, 'desc'))
+    assert isinstance(with_ties, bool)
+    
+    # create windowspec
+    if by is None:
+      win = self._create_windowspec(order_by = order_by_spec)
+    else:
+      by = self._clean_by(by)
+      win = self._create_windowspec(order_by = order_by_spec, by = by)
+    
+    # decide on ranking function
+    if with_ties:
+      rank_func = F.dense_rank()
+    else:
+      rank_func = F.row_number()
+    
+    # core
+    res = (self.__data
+               .withColumn('_rn', rank_func.over(win))
+               .filter(F.col('_rn') <= n)
+               .drop('_rn')
+               )
+    
+    return res
+  
