@@ -170,3 +170,165 @@ def test_count(penguins_data):
   assert isinstance(res, pyspark.sql.dataframe.DataFrame)
   
   spark.stop()
+
+def test_left_join(penguins_data):
+
+  from pyspark.sql import SparkSession
+  import pyspark.sql.functions as F
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+
+  # Create the DataFrames
+  df1 = spark.createDataFrame([
+      (1, "jordan", 'DS'),
+      (2, "jack", 'DS'),
+      (1, "jack", 'SDE'),
+      (2, "jack", 'SDE'),
+      (1, "jack", 'PM'),
+      (2, "jack", 'PM')
+      ],        
+      ("id_x", "name", "dept")
+  )
+
+  df2 = spark.createDataFrame([
+      (2, "SDE", 20), 
+      (1, "SDE", 10),
+      (2, "PM", 30),
+      (2, "BA", 40),
+      ],
+    ("id_y", "dept", "age")
+  )
+
+  # Perform Left Join using different combinations of on clause.
+  left_join_df_1 = df1.ts.left_join(df2, on = ["id"])
+  left_join_df_2 = df1.ts.left_join(df2, on = "id")
+  left_join_df_3 = df1.ts.left_join(df2, on = ["id", "dept"])
+
+  assert isinstance(left_join_df_1, pyspark.sql.dataframe.DataFrame)
+  assert left_join_df_1.count() == 12
+  assert left_join_df_2.count() == 12
+  assert left_join_df_3.count() == 6
+  
+  spark.stop()
+
+def test_left_join_sql_on(penguins_data):
+
+  from pyspark.sql import SparkSession
+  import pyspark.sql.functions as F
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+
+  # Create the DataFrames
+  df1 = spark.createDataFrame([
+      (1, "jordan", 'DS'),
+      (2, "jack", 'DS'),
+      (1, "jack", 'SDE'),
+      (2, "jack", 'SDE'),
+      (1, "jack", 'PM'),
+      (2, "jack", 'PM')
+      ],        
+      ("id", "name", "dept")
+  )
+
+  df2 = spark.createDataFrame([
+      (2, "SDE", 10), 
+      (1, "SDE", 20),
+      (2, "PM", 30),
+      (2, "BA", 40),
+      ],
+    ("id", "dept", "age")
+  )
+
+  # Perform Left Join using different combinations of sql_on clause.
+  left_join_df_1 = df1.ts.left_join(df2, sql_on = 'LHS.id == RHS.id')
+  left_join_df_2 = df1.ts.left_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept)')
+  left_join_df_3 = df1.ts.left_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)')
+
+  assert isinstance(left_join_df_1, pyspark.sql.dataframe.DataFrame)
+  assert left_join_df_1.count() == 12
+  assert left_join_df_2.count() == 6
+  assert left_join_df_3.count() == 6
+
+  print(left_join_df_1.show().toPandas())
+  
+  spark.stop()
+
+def test_inner_join(penguins_data):
+
+  from pyspark.sql import SparkSession
+  import pyspark.sql.functions as F
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+
+  # Create the DataFrames
+  df1 = spark.createDataFrame([
+      (1, "jordan", 'DS'),
+      (2, "jack", 'DS'),
+      (1, "jack", 'SDE'),
+      (2, "jack", 'SDE'),
+      (1, "jack", 'PM'),
+      (2, "jack", 'PM')
+      ],        
+      ("id", "name", "dept")
+  )
+
+  df2 = spark.createDataFrame([
+      (2, "SDE", 20), 
+      (1, "SDE", 10),
+      (2, "PM", 30),
+      (2, "BA", 40),
+      ],
+    ("id", "dept", "age")
+  )
+
+  # Perform Inner Join using different combinations of on clause.
+  inner_join_df_1 = df1.ts.inner_join(df2, on = ["id"])
+  inner_join_df_2 = df1.ts.inner_join(df2, on = "id")
+  inner_join_df_3 = df1.ts.inner_join(df2, on = ["id", "dept"])
+
+  assert isinstance(inner_join_df_1, pyspark.sql.dataframe.DataFrame)
+  assert inner_join_df_1.count() == 12
+  assert inner_join_df_2.count() == 12
+  assert inner_join_df_3.count() == 3
+  
+  spark.stop()
+
+def test_inner_join_sql_on(penguins_data):
+
+  from pyspark.sql import SparkSession
+  import pyspark.sql.functions as F
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+
+  # Create the DataFrames
+  df1 = spark.createDataFrame([
+      (1, "jordan", 'DS'),
+      (2, "jack", 'DS'),
+      (1, "jack", 'SDE'),
+      (2, "jack", 'SDE'),
+      (1, "jack", 'PM'),
+      (2, "jack", 'PM')
+      ],        
+      ("id", "name", "dept")
+  )
+
+  df2 = spark.createDataFrame([
+      (2, "SDE", 10), 
+      (1, "SDE", 20),
+      (2, "PM", 30),
+      (2, "BA", 40),
+      ],
+    ("id", "dept", "age")
+  )
+
+  # Perform Inner Join using different combinations of sql_on clause.
+  inner_join_df_1 = df1.ts.inner_join(df2, sql_on = 'LHS.id == RHS.id')
+  inner_join_df_2 = df1.ts.inner_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept)')
+  inner_join_df_3 = df1.ts.inner_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)')
+
+  assert isinstance(inner_join_df_1, pyspark.sql.dataframe.DataFrame)
+  assert inner_join_df_1.count() == 12
+  assert inner_join_df_2.count() == 3
+  assert inner_join_df_3.count() == 2
+  
+  spark.stop()

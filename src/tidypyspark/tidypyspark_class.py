@@ -6,8 +6,11 @@ import warnings
 import pyspark
 import pyspark.sql.functions as F
 from pyspark.sql.window import Window
-from tidypyspark.accessor_class import register_dataframe_accessor
+import re
 import numpy as np
+from collections_extended import setlist
+from collections import Counter
+from tidypyspark.accessor_class import register_dataframe_accessor
 from tidypyspark._unexported_utils import (
                               _is_kwargable,
                               _is_valid_colname,
@@ -654,7 +657,7 @@ class acc_on_pyspark():
     
     '''
     res = self.__data
-    
+  
     with_win = False
     # windowspec gets first preference
     if window_spec is not None:
@@ -733,49 +736,177 @@ class acc_on_pyspark():
   summarize = summarise
     
   # joins --------------------------------------------------------------------
-  def join(self, pyspark_df, on = None, sql_on = None):
-    '''
-    TODO -- srikanth
-
-    Parameters
-    ----------
-    pyspark_df : TYPE
-      DESCRIPTION.
-    on : TYPE, optional
-      DESCRIPTION. The default is None.
-    sql_on : TYPE, optional
-      DESCRIPTION. The default is None.
-
-    Returns
-    -------
-    res : TYPE
-      DESCRIPTION.
-
-    '''
+  def _validate_join(self, pyspark_df, on, on_x, on_y , sql_on, how, suffix):
+      
     assert isinstance(pyspark_df, pyspark.sql.dataframe.DataFrame),\
       "'pyspark_df' should be a pyspark dataframe"
     
-    assert ((on is None) + (sql_on is None) == 1),\
-      "Exactly one among 'on', 'sql_on' should be specified"
+    assert isinstance(how, str),\
+      "arg 'how' should be a string"
+    assert how in ['inner', 'left', 'right', 'full', 'semi', 'cross', 'anti'],\
+      "arg 'how' should be one among: 'inner', 'left', 'right', 'full', 'semi', 'cross', 'anti'"
     
+    cn_x = self.colnames
+    cn_y = pyspark_df.columns
+  
+    assert ((on is not None) + ((on_x is not None) and (on_y is not None)) 
+            + (sql_on is not None) == 1),\
+      "Exactly one among 'on', 'sql_on', 'on_x and on_y' should be specified"
+  
     if on is not None:
       assert _is_string_or_string_list(on),\
-          ("'on' should be a string or a list of strings of common "
-           "column names"
-           )
+        ("'on' should be a string or a list of strings of common "
+          "column names"
+        )
+      on = _enlist(on)
+      assert _is_unique_list(on),\
+        "arg 'on' should not have duplicates"
+      assert set(on).issubset(cn_x),\
+        "arg 'on' should be a subset of column names of x"
+      assert set(on).issubset(cn_y),\
+        "arg 'on' should be a subset of column names of y"
+    elif sql_on is not None:
+      assert isinstance(sql_on, str),\
+        "arg 'sql_on' should be a string"
+    else:
+      assert on_x is not None and on_y is not None,\
+        ("When arg 'on' is None, " 
+          "both args'on_x' and 'on_y' should not be None"
+        )
+      assert _is_string_or_string_list(on_x),\
+        "arg 'on_x' should be a string or a list of strings"
+      assert _is_string_or_string_list(on_y),\
+        "arg 'on_y' should be a string or a list of strings"
+      
+      on_x = _enlist(on_x)
+      on_y = _enlist(on_y)
+      
+      assert _is_unique_list(on_x),\
+        "arg 'on_x' should not have duplicates"
+      assert _is_unique_list(on_y),\
+        "arg 'on_y' should not have duplicates"    
+      assert set(on_x).issubset(cn_x),\
+        "arg 'on_x' should be a subset of column names of x"
+      assert set(on_y).issubset(cn_y),\
+        "arg 'on_y' should be a subset of column names of y"
+      assert len(on_x) == len(on_y),\
+        "Lengths of arg 'on_x' and arg 'on_y' should match"
+      
+    assert isinstance(suffix, list),\
+      "arg 'suffix' should list"
+          
+    assert len(suffix) == 2,\
+      "arg 'suffix' should be a list of length 2"
         
-    if sql_on is not None:
-      assert isinstance(sql_on, str)
+    assert isinstance(suffix[0], str) and isinstance(suffix[1], str),\
+      "arg 'suffix' should be a list of two strings"
     
+    assert suffix[0] != suffix[1],\
+      "left and right suffix should be different."
+    
+    return None
+
+  def join(self, pyspark_df, on, on_x, on_y, sql_on, suffix, how):
+
+    self._validate_join(pyspark_df, on, on_x, on_y, sql_on, suffix, how)
+   
     LHS = self.__data
     RHS = pyspark_df
     
+    cols_LHS = LHS.columns
+    cols_RHS = RHS.columns
+  
     if on is not None:
-      res = LHS.join(RHS, on = on, how = "inner")
-    else:
-      res = LHS.join(RHS, on = eval(sql_on), how = "inner")
-        
+      self._execute_on_command_for_join(on, suffix, how, LHS, RHS, cols_LHS, cols_RHS)
+    elif sql_on is not None:
+      res = LHS.join(RHS, on = eval(sql_on), how = how)
+
     return res
+
+  def _execute_on_command_for_join(self, on, suffix, how, LHS, RHS, cols_LHS, cols_RHS):
+      
+      on = _enlist(on)
+
+      # Create a dictionary with old column names as keys and values as old column names + suffix
+      new_cols_LHS = list(setlist(cols_LHS) - setlist(on))
+      old_new_dict_LHS = {col: col + suffix[0] for col in new_cols_LHS}      
+
+      # Create a dictionary with old column names as keys and values as old column names + suffix
+      new_cols_RHS = list(setlist(cols_RHS) - setlist(on))
+      old_new_dict_RHS = {col: col + suffix[1] for col in new_cols_RHS}
+
+      assert len(list(set(old_new_dict_LHS.values()).intersection(old_new_dict_RHS.values()))) == 0,\
+        "Column names should be unique after joining the dataframes"
+      
+      # Create a list of columns with alias for LHS df in pyspark convention.
+      select_col_with_alias_LHS = [F.col(c).alias(old_new_dict_LHS.get(c, c)) for c in cols_LHS]
+      # Create the new LHS df with the new column names.
+      new_LHS = LHS.select(select_col_with_alias_LHS)
+      
+      # Create a list of columns with alias for RHS df in pyspark convention.
+      select_col_with_alias_RHS = [F.col(c).alias(old_new_dict_RHS.get(c, c)) for c in cols_RHS]
+      # Create the new RHS df with the new column names.
+      new_RHS = RHS.select(select_col_with_alias_RHS)
+
+      # Join the dataframes
+      res = new_LHS.join(new_RHS, on = on, how = how)
+  
+  def _extract_cols_from_sql_on_command(self, sql_on):
+
+    # Set regex pattern
+    pattern = '([a-zA-Z0-9]+)\.([a-zA-Z0-9]+)'
+
+    # Get all column names with their table names
+    # Format - [('LH', 'dept'), ('LHS', 'dept'), ('RHS', 'age')]
+    column_names_tuple_list = re.findall(pattern, sql_on)
+
+    # Filtering tuples having only LHS or RHS as the first element of the tuple
+    filtered_tuples = [(key, value) for (key, value) in column_names_tuple_list if key=='LHS' or key=='RHS']
+
+    # Generates a dictionary with LHS and RHS as keys and column names as values.
+    # e.g. {'RHS': ['id2', 'dept', 'age'], 'LHS': ['dept']}
+    dict_from_tuple = {key:[] for (key, _) in filtered_tuples}
+    for tpl in filtered_tuples:
+        dict_from_tuple[tpl[0]].append(tpl[1])
+
+    return dict_from_tuple
+
+  def left_join(self, pyspark_df, on = None, on_x = None, on_y = None , sql_on = None, suffix = ["", "_y"]):
+    
+    return self.join(pyspark_df, on, on_x, on_y, sql_on, suffix, 'left')
+  
+  def right_join(self, pyspark_df, on = None, sql_on = None):
+    
+    self._validate_join(pyspark_df, on, sql_on)
+    return self._join(pyspark_df, on, sql_on, 'right')
+  
+  def inner_join(self, pyspark_df, on = None, sql_on = None):
+    
+    self._validate_join(pyspark_df, on, sql_on)
+    return self._join(pyspark_df, on, sql_on, 'inner')
+  
+  def full_join(self, pyspark_df, on = None, sql_on = None):
+    
+    self._validate_join(pyspark_df, on, sql_on)
+    return self._join(pyspark_df, on, sql_on, 'full')
+  
+  outer_join = full_join
+  
+  def semi_join(self, pyspark_df, on = None, sql_on = None):
+    
+    self._validate_join(pyspark_df, on, sql_on)
+    return self._join(pyspark_df, on, sql_on, 'semi')
+  
+  def anti_join(self, pyspark_df, on = None, sql_on = None):
+    
+    self._validate_join(pyspark_df, on, sql_on)
+    return self._join(pyspark_df, on, sql_on, 'anti')
+  
+  def cross_join(self, pyspark_df, suffix = ["", "_y"]):
+    
+    self._validate_join(pyspark_df, on = self.colnames[0],sql_on = None)
+    return self._join(pyspark_df, on, sql_on, 'cross')
+
   
   # count methods ------------------------------------------------------------
   def count(self, column_names, name = 'n', wt = None):
