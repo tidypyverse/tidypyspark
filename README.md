@@ -30,10 +30,10 @@ pipe methods
 
 Join methods (Ja)
 ------------
-- [ ] join
-- [ ] inner, outer/full, left, right
-- [ ] semi, anti
-- [ ] cross
+- [x] join
+- [x] inner, outer/full, left, right
+- [x] semi, anti
+- [x] cross
 
 Bind methods (Sr)
 ------------
