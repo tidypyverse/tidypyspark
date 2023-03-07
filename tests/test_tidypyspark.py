@@ -171,7 +171,6 @@ def test_count(penguins_data):
   
   spark.stop()
 
-
 # join tests -----------------------------------------------------------------
 def test_left_join_on_command(penguins_data):
 
@@ -961,3 +960,80 @@ def test_join(penguins_data):
   semi_join_df_1 = df1.ts.join(df2, on = ["id", "dept"] , how = 'semi')
   assert isinstance(semi_join_df_1, pyspark.sql.dataframe.DataFrame)
   assert semi_join_df_1.count() == 3
+  
+  spark.stop()
+  
+def test_pipe_tee(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  
+  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  res = pen.ts.pipe_tee(
+    lambda x: x.select(['species', 'bill_length_mm']).show(6)
+    )
+  assert isinstance(res, pyspark.sql.dataframe.DataFrame)
+  assert res == pen
+  
+  spark.stop()
+  
+def test_slice(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  
+  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  
+  # min ----------------------------------------------------------------------
+  # with ties check
+  res = pen.ts.slice_min(n = 2,
+                         order_by_column = 'bill_depth_mm',
+                         with_ties = True,
+                         by = ['species', 'sex']
+                         )
+  assert isinstance(res, pyspark.sql.dataframe.DataFrame)
+  # check if each group has atleast 2
+  res  = pen.ts.count(['species', 'sex'])
+  res2 = res.filter(F.col('n') >= F.lit(2))
+  assert res.count() == res2.count()
+  
+  # without ties check
+  res = pen.ts.slice_min(n = 2,
+                         order_by_column = 'bill_depth_mm',
+                         with_ties = False,
+                         by = ['species', 'sex']
+                         )
+  assert isinstance(res, pyspark.sql.dataframe.DataFrame)
+  # check if each group has exactly 2
+  res  = res.ts.count(['species', 'sex'])
+  res2 = res.filter(F.col('n') == F.lit(2))
+  assert res.count() == res2.count()
+  
+  # max ----------------------------------------------------------------------
+  # with ties check
+  res = pen.ts.slice_max(n = 2,
+                         order_by_column = 'bill_depth_mm',
+                         with_ties = True,
+                         by = ['species', 'sex']
+                         )
+  assert isinstance(res, pyspark.sql.dataframe.DataFrame)
+  # check if each group has atleast 2
+  res  = res.ts.count(['species', 'sex'])
+  res2 = res.filter(F.col('n') >= F.lit(2))
+  assert res.count() == res2.count()
+  
+  # without ties check
+  res = pen.ts.slice_max(n = 2,
+                         order_by_column = 'bill_depth_mm',
+                         with_ties = False,
+                         by = ['species', 'sex']
+                         )
+  assert isinstance(res, pyspark.sql.dataframe.DataFrame)
+  # check if each group has exactly 2
+  res  = res.ts.count(['species', 'sex'])
+  res2 = res.filter(F.col('n') == F.lit(2))
+  assert res.count() == res2.count()
+  
+  spark.stop()
