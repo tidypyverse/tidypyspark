@@ -741,7 +741,7 @@ class acc_on_pyspark():
   
   summarize = summarise
     
-  # joins test cases --------------------------------------------------------------------
+  # join methods --------------------------------------------------------------------
   def _validate_join(self, pyspark_df, on, on_x, on_y , sql_on, suffix, how):
       
     assert isinstance(pyspark_df, pyspark.sql.dataframe.DataFrame),\

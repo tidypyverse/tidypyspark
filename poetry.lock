@@ -15,6 +15,14 @@ tests-no-zope = ["hypothesis", "pympler", "pytest (>=4.3.0)", "pytest-xdist", "c
 tests_no_zope = ["hypothesis", "pympler", "pytest (>=4.3.0)", "pytest-xdist", "cloudpickle", "mypy (>=0.971,<0.990)", "pytest-mypy-plugins"]
 
 [[package]]
+name = "collections-extended"
+version = "2.0.2"
+description = "Extra Python Collections - bags (multisets) and setlists (ordered sets)"
+category = "main"
+optional = false
+python-versions = ">=3.7,<4.0"
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
@@ -125,10 +133,11 @@ python-versions = ">=3.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "6f0479f78ee9028d5d7f8b4734506ebb847a1d89233e6ea7b91bffc898522e05"
+content-hash = "4ab48a1cd38f2202102acbd49635441b652436fe8fc0e5f8b9545f4cbe04da4c"
 
 [metadata.files]
 attrs = []
+collections-extended = []
 colorama = []
 exceptiongroup = []
 iniconfig = []
