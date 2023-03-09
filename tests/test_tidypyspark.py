@@ -1037,3 +1037,49 @@ def test_slice(penguins_data):
   assert res.count() == res2.count()
   
   spark.stop()
+
+def test_rbind(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  
+  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  
+  df1 = pen.select(['species', 'island', 'bill_length_mm'])
+  df2 = pen.select(['species', 'island', 'bill_depth_mm'])
+  
+  res = df1.ts.rbind(df2)
+  assert len(res.columns) == 4
+  assert res.count() == (344 * 2)
+  
+  res = df1.ts.rbind(df2, id = "id")
+  assert len(res.columns) == 5
+  assert res.count() == (344 * 2)
+  assert res.ts.count('id').count() == 2
+  
+  spark.stop()
+  
+def test_union(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  
+  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  
+  df1 = pen.ts.slice_max(n = 2,
+                         order_by_column = 'bill_length_mm',
+                         with_ties = False
+                         )
+  df2 = pen.ts.slice_max(n = 4,
+                         order_by_column = 'bill_length_mm',
+                         with_ties = False
+                         )
+  
+  assert df1.ts.union(df2).count() == 4
+  assert (df1.ts.union(df2.ts.select(['bill_length_mm', 'species']))
+             .count()) == 6
+  assert len(df1.ts.union(df2).columns) == len(df1.columns)
+  
+  spark.stop()

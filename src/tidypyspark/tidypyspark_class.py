@@ -1964,4 +1964,94 @@ class acc_on_pyspark():
                )
     
     return res
+
+  # rbind --------------------------------------------------------------------
+  def rbind(self, pyspark_df, id = None):
+    '''
+    rbind
+    bind or concatenate rows of two dataframes
+
+    Parameters
+    ----------
+    pyspark_df : pyspark dataframe
+    id : str, optional
+      When not None, a id column created with value 'left' for self and
+      'right' for the pyspark_df.
+      The default is None.
+
+    Returns
+    -------
+    pyspark dataframe
     
+    Examples
+    --------
+    df1 = pen.select(['species', 'island', 'bill_length_mm'])
+    df2 = pen.select(['species', 'island', 'bill_depth_mm'])
+    
+    df1.ts.rbind(df2).show()
+    df1.ts.rbind(df2, id = "id").show()
+    '''
+    assert isinstance(pyspark_df, pyspark.sql.dataframe.DataFrame),\
+      "'pyspark_df' should be a pyspark dataframe"
+    
+    LHS = self.__data
+    RHS = pyspark_df
+    
+    if id is not None:
+      assert isinstance(id, str)
+      cn = list(set(LHS.columns).union(RHS.columns))
+      assert id not in cn,\
+        "id should not be a column name of one of the two dataframes"
+      res = (LHS.withColumn(id, F.lit('left'))
+                .unionByName(RHS.withColumn(id, F.lit('right')),
+                             allowMissingColumns = True
+                             )
+                )
+    else:
+      res = LHS.unionByName(RHS, allowMissingColumns = True)
+    
+    if id is not None:
+      non_id_cols = list(set(res.columns).difference([id]))
+      res = res.select([id] + non_id_cols)
+    
+    return res
+  
+  # union --------------------------------------------------------------------
+  def union(self, pyspark_df):
+    '''
+    rbind
+    bind or concatenate rows of two dataframes
+
+    Parameters
+    ----------
+    pyspark_df : pyspark dataframe
+    id : str, optional
+      When not None, a id column created with value 'left' for self and
+      'right' for the pyspark_df.
+      The default is None.
+
+    Returns
+    -------
+    pyspark dataframe
+    
+    Examples
+    --------
+    df1 = pen.ts.slice_max(n = 2,
+                           order_by_column = 'bill_length_mm',
+                           with_ties = False
+                           )
+    df2 = pen.ts.slice_max(n = 4,
+                           order_by_column = 'bill_length_mm',
+                           with_ties = False
+                           )
+    
+    df1.ts.union(df2).show()
+    '''
+    assert isinstance(pyspark_df, pyspark.sql.dataframe.DataFrame),\
+      "'pyspark_df' should be a pyspark dataframe"
+    
+    res = (self.__data
+               .unionByName(pyspark_df, allowMissingColumns = True)
+               .distinct()
+               )
+    return res
