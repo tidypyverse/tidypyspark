@@ -2125,15 +2125,14 @@ class acc_on_pyspark():
     
     # when id_cols is empty, all columns except the columns from
     # `names_from` and `values_from` are considered as id_cols
-    (penguins_tidy
-     .select(['flipper_length_mm', 'body_mass_g'], include = False)
-     .pivot_wider(names_from    = ["species", "year"]
+    (pen.ts.select(['flipper_length_mm', 'body_mass_g'], include = False)
+            .pivot_wider(names_from    = ["species", "year"]
                   , values_from = ["bill_length_mm", "bill_depth_mm"]
                   )
      )
-     
+
     # use some prefix for new columns
-    penguins_tidy.pivot_wider(id_cols       = "island"
+    pen.ts.pivot_wider(id_cols       = "island"
                               , names_from  = "sex"
                               , values_from = "bill_length_mm"
                               , names_prefix = "gender_"
