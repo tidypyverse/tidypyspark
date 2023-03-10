@@ -1083,3 +1083,146 @@ def test_union(penguins_data):
   assert len(df1.ts.union(df2).columns) == len(df1.columns)
   
   spark.stop()
+
+def test_pivot_longer():
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  
+  #Create spark dataframe.
+  data = [("Banana",1000,"USA"), ("Carrots",1500,"USA"), ("Beans",1600,"USA"), \
+        ("Orange",2000,"USA"),("Orange",2000,"USA"),("Banana",400,"China"), \
+        ("Carrots",1200,"China"),("Beans",1500,"China"),("Orange",4000,"China"), \
+        ("Banana",2000,"Canada"),("Carrots",2000,"Canada"),("Beans",2000,"Mexico")]
+  columns= ["Product","Amount","Country"]
+  df = spark.createDataFrame(data = data, schema = columns)
+  pivotDF = df.groupBy("Product").pivot("Country").sum("Amount")
+
+  # +-------+------+-----+------+----+
+  # |Product|Canada|China|Mexico|USA |
+  # +-------+------+-----+------+----+
+  # |Orange |null  |4000 |null  |4000|
+  # |Beans  |null  |1500 |2000  |1600|
+  # |Banana |2000  |400  |null  |1000|
+  # |Carrots|2000  |1200 |null  |1500|
+  # +-------+------+-----+------+----+
+
+  # Test the pivot_longer function
+  df1 = pivotDF.ts.pivot_longer(names_to = 'Country',
+                           values_to = 'Total',
+                           cols = ['Canada', 'China', 'Mexico'],
+                           include = True
+                          )
+  # Output
+  # +----+-------+-------+-----+
+  # | USA|Product|Country|Total|
+  # +----+-------+-------+-----+
+  # |4000| Orange| Canada| null|
+  # |4000| Orange|  China| 4000|
+  # |4000| Orange| Mexico| null|
+  # |1600|  Beans| Canada| null|
+  # |1600|  Beans|  China| 1500|
+  # |1600|  Beans| Mexico| 2000|
+  # |1000| Banana| Canada| 2000|
+  # |1000| Banana|  China|  400|
+  # |1000| Banana| Mexico| null|
+  # |1500|Carrots| Canada| 2000|
+  # |1500|Carrots|  China| 1200|
+  # |1500|Carrots| Mexico| null|
+  # +----+-------+-------+-----+
+
+  assert isinstance(df1, pyspark.sql.dataframe.DataFrame)
+  assert df1.count() == 12
+  assert set(df1.columns) == set(['USA', 'Product', 'Country', 'Total'])
+
+  # Test the pivot_longer function
+  df2 = pivotDF.ts.pivot_longer(names_to = 'Country',
+                                values_to = 'Total',
+                                cols = ['Canada'],
+                                include = True
+                               )
+  # Output
+  # +-----+----+-------+------+-------+-----+
+  # |China| USA|Product|Mexico|Country|Total|
+  # +-----+----+-------+------+-------+-----+
+  # | 4000|4000| Orange|  null| Canada| null|
+  # | 1500|1600|  Beans|  2000| Canada| null|
+  # |  400|1000| Banana|  null| Canada| 2000|
+  # | 1200|1500|Carrots|  null| Canada| 2000|
+  # +-----+----+-------+------+-------+-----+
+
+  assert isinstance(df2, pyspark.sql.dataframe.DataFrame)
+  assert df2.count() == 4
+  assert set(df2.columns) == set(['China', 'USA', 'Product', 'Mexico', 'Country', 'Total'])
+  
+  spark.stop()
+
+def test_pivot_wider():
+  import pyspark.sql.functions as F
+  from pyspark.sql import SparkSession
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+
+  #Create spark dataframe.
+  df = spark.createDataFrame([(1, "jordan", 'DS'),
+                              (2, "jack", 'DS'),
+                              (1, "jack", 'SDE'),
+                              (2, "jack", 'SDE'),
+                              (1, "jack", 'PM'),
+                              (2, "jack", 'PM')
+                              ],
+                              ("id", "name", "dept")
+                          )
+  df = (df.withColumn('name2', F.concat_ws("", F.col('name'), F.lit("_2")))
+          .withColumn('name3', F.concat_ws("", F.col('name'), F.lit("_3")))
+          .withColumn('dept2', F.concat_ws("", F.col('dept'), F.lit("_2")))
+          .withColumn('dept3', F.concat_ws("", F.col('dept'), F.lit("_3")))
+      )
+  
+  # Input dataframe
+  # +---+------+----+--------+--------+-----+-----+
+  # | id|  name|dept|   name2|   name3|dept2|dept3|
+  # +---+------+----+--------+--------+-----+-----+
+  # |  1|jordan|  DS|jordan_2|jordan_3| DS_2| DS_3|
+  # |  2|  jack|  DS|  jack_2|  jack_3| DS_2| DS_3|
+  # |  1|  jack| SDE|  jack_2|  jack_3|SDE_2|SDE_3|
+  # |  2|  jack| SDE|  jack_2|  jack_3|SDE_2|SDE_3|
+  # |  1|  jack|  PM|  jack_2|  jack_3| PM_2| PM_3|
+  # |  2|  jack|  PM|  jack_2|  jack_3| PM_2| PM_3|
+  # +---+------+----+--------+--------+-----+-----+
+
+  # Test the pivot_wider function
+  df1 = df.ts.pivot_wider(id_cols = "id",
+                          names_from = ['name', 'name2', 'name3'],
+                          values_from = "dept"
+                          )
+  # Output
+  # ---+--------------------------+------------------------+------------------------+----------------------+------------------------+----------------------+----------------------+--------------------+
+  # | id|jordan__jordan_2__jordan_3|jack__jordan_2__jordan_3|jordan__jack_2__jordan_3|jack__jack_2__jordan_3|jordan__jordan_2__jack_3|jack__jordan_2__jack_3|jordan__jack_2__jack_3|jack__jack_2__jack_3|
+  # +---+--------------------------+------------------------+------------------------+----------------------+------------------------+----------------------+----------------------+--------------------+
+  # |  1|                      [DS]|                    null|                    null|                  null|                    null|                  null|                  null|           [SDE, PM]|
+  # |  2|                      null|                    null|                    null|                  null|                    null|                  null|                  null|       [DS, SDE, PM]|
+  # +---+--------------------------+------------------------+------------------------+----------------------+------------------------+----------------------+----------------------+--------------------+
+  assert isinstance(df1, pyspark.sql.dataframe.DataFrame)
+  assert df1.count() == 2
+  assert len(df1.columns) == 9
+
+  # Test the pivot_wider function
+  df2 = df.ts.pivot_wider(id_cols = ["id", "dept3"],
+                          names_from = ['name', 'name2'],
+                          values_from = ['dept', 'dept2']
+                          )
+  # Output
+  # ---+-----+---------------------+----------------------+-------------------+--------------------+-------------------+--------------------+-----------------+------------------+
+  # | id|dept3|jordan__jordan_2_dept|jordan__jordan_2_dept2|jack__jordan_2_dept|jack__jordan_2_dept2|jordan__jack_2_dept|jordan__jack_2_dept2|jack__jack_2_dept|jack__jack_2_dept2|
+  # +---+-----+---------------------+----------------------+-------------------+--------------------+-------------------+--------------------+-----------------+------------------+
+  # |  1| DS_3|                 [DS]|                [DS_2]|               null|                null|               null|                null|             null|              null|
+  # |  2| DS_3|                 null|                  null|               null|                null|               null|                null|             [DS]|            [DS_2]|
+  # |  1|SDE_3|                 null|                  null|               null|                null|               null|                null|            [SDE]|           [SDE_2]|
+  # |  2|SDE_3|                 null|                  null|               null|                null|               null|                null|            [SDE]|           [SDE_2]|
+  # |  1| PM_3|                 null|                  null|               null|                null|               null|                null|             [PM]|            [PM_2]|
+  # |  2| PM_3|                 null|                  null|               null|                null|               null|                null|             [PM]|            [PM_2]|
+  # +---+-----+---------------------+----------------------+-------------------+--------------------+-------------------+--------------------+-----------------+------------------+
+  assert df2.count() == 6
+  assert len(df2.columns) == 10

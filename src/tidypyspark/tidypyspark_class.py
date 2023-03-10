@@ -2055,3 +2055,260 @@ class acc_on_pyspark():
                .distinct()
                )
     return res
+  
+  # pivot methods ------------------------------------------------------------
+
+  def pivot_wider(self, 
+                  names_from,
+                  values_from,
+                  id_cols = None,
+                  sep = "__",
+                  names_prefix = "",
+                  ):
+    '''
+    Pivot data from long to wide
+    
+    Parameters
+    ----------
+    names_from: string or list of strings
+        column names whose unique combinations are expected to become column
+        new names in the result
+    
+    values_from: string or list of strings
+        column names to fill the new columns with
+    
+    id_cols: string or list of strings, default is None
+        Names of the columns that should uniquely identify an observation 
+        (row) after widening (columns of the original dataframe that are
+        supposed to stay put)
+        
+    sep: string
+        seperator to use while creating resulting column names
+        
+    names_prefix: string
+        prefix for new columns
+        
+    Returns
+    -------
+    tidyframe
+    
+    Examples
+    --------
+    pen.ts.pivot_wider(id_cols = "island",
+                       names_from  = "sex,
+                       values_from = "bill_length_mm"
+                      )
+                              
+    
+    # All three inputs: 'id_cols', 'names_from', 'values_from' can be lists
+    pen.ts.pivot_wider(id_cols = ["island", "sex"], 
+                      names_from  = "species",
+                      values_from = "bill_length_mm"
+                      )
+                              
+    pen.ts.pivot_wider(
+        id_cols       = ["island", "sex"]
+        , names_from  = "species"
+        , values_from = ["bill_length_mm", "bill_depth_mm"]
+        )
+    
+    pen.ts.pivot_wider(id_cols = ["island", "sex"]
+                              , names_from  = ["species", "year"]
+                              , values_from = "bill_length_mm"
+                              )
+                              
+    pen.ts.pivot_wider(
+        id_cols       = ["island", "sex"]
+        , names_from  = ["species", "year"]
+        , values_from = ["bill_length_mm", "bill_depth_mm"]
+        )
+    
+    # when id_cols is empty, all columns except the columns from
+    # `names_from` and `values_from` are considered as id_cols
+    (penguins_tidy
+     .select(['flipper_length_mm', 'body_mass_g'], include = False)
+     .pivot_wider(names_from    = ["species", "year"]
+                  , values_from = ["bill_length_mm", "bill_depth_mm"]
+                  )
+     )
+     
+    # use some prefix for new columns
+    penguins_tidy.pivot_wider(id_cols       = "island"
+                              , names_from  = "sex"
+                              , values_from = "bill_length_mm"
+                              , names_prefix = "gender_"
+                              )
+    '''
+    
+    cn = self.colnames
+    
+    assert _is_string_or_string_list(names_from),\
+        "arg 'names_from' should be string or a list of strings"
+    names_from = _enlist(names_from)
+    assert _is_unique_list(names_from),\
+        "arg 'names_from' should have unique strings"
+    assert set(names_from).issubset(cn),\
+        "arg 'names_from' should be a subset of existing column names"
+    
+    assert _is_string_or_string_list(values_from),\
+        "arg 'values_from' should be string or a list of strings"
+    values_from = _enlist(values_from)
+    assert set(values_from).issubset(cn),\
+        "arg 'names_from' should have unique strings"
+    assert len(set(values_from).intersection(names_from)) == 0,\
+        ("arg 'names_from' and 'values_from' should not "
+        "have common column names"
+        )
+    names_values_from = set(values_from).union(names_from)
+    
+    if id_cols is None:
+        id_cols = list(set(cn).difference(names_values_from))
+        if len(id_cols) == 0:
+            raise Exception(
+                ("'id_cols' is turning out to be empty. Choose the "
+                "'names_from' and 'values_from' appropriately or specify "
+                "'id_cols' explicitly."
+                ))
+        else:
+            print("'id_cols' chosen: " + str(id_cols))
+    else:
+        assert _is_string_or_string_list(id_cols),\
+            "arg 'id_cols' should be string or a list of strings"
+        id_cols = _enlist(id_cols)
+        assert _is_unique_list(id_cols),\
+            "arg 'id_cols' should have unique strings"
+        assert len(set(id_cols).intersection(names_values_from)) == 0,\
+            ("arg 'id_cols' should not have common names with either "
+            "'names_from' or 'values_from'"
+            )
+    
+    assert isinstance(sep, str),\
+        "arg 'sep' should be a string"
+        
+    assert isinstance(names_prefix, str),\
+        "arg 'names_prefix' should be a string without spaces"
+    assert ' ' not in names_prefix,\
+        "arg 'names_prefix' should be a string without spaces"
+    
+    df = self.__data
+
+    # cartesian product of names_from
+    cartesian_product_names_from_df = df.select(names_from[0]).distinct()
+    # Construct the pyspark expression for the pivot_col via names_from
+    names_from_pyspark_expr = [F.col(names_from[0])]
+    if len(names_from) > 1:
+        for i in range(1, len(names_from)):
+            cartesian_product_names_from_df = cartesian_product_names_from_df.crossJoin(
+                df.select(names_from[i]).distinct()
+                )
+            names_from_pyspark_expr.append(F.col(names_from[i]))
+    
+    # Construct the pivot_col from names_from
+    cartesian_product_names_from_df = (cartesian_product_names_from_df.withColumn('pivot_col',
+                                                                      F.concat_ws(sep, *names_from_pyspark_expr)
+                                                                                  )
+                                      )
+
+    # Construct the unique combinations of names_from columns in a python list
+    pivot_cols = [row.pivot_col for row in cartesian_product_names_from_df.select('pivot_col').collect()] 
+
+    # Construct the pyspark expressions for the values_from
+    values_from_pyspark_expr = [F.collect_list(F.col(vf)).alias(vf) for vf in values_from]
+
+    # Core logic for pivot_wider
+    df = (df.withColumn('pivot_col', F.concat_ws(sep, *names_from_pyspark_expr))
+            .groupBy(id_cols)
+            .pivot('pivot_col', pivot_cols)
+            .agg(*values_from_pyspark_expr)
+          )
+    
+    # Replace empty lists with None
+    new_pivot_cols = list(set(df.columns).difference(id_cols))
+    for col in new_pivot_cols:
+        df = df.withColumn(col, F.when(F.size(col) > 0, F.col(col)).otherwise(None))
+
+    # Rename the pivot columns in case names_prefix is passed explicitly.
+    if names_prefix is not None and  names_prefix != "":
+        df = df.select([F.col(col).alias(names_prefix + sep + col) \
+                        if col in new_pivot_cols else col for col in df.columns])
+
+    return df
+
+  def pivot_longer(self, 
+                  cols,
+                  names_to = "name",
+                  values_to = "value",
+                  include = True
+                  ):
+    '''
+    Pivot from wide to long
+    aka melt
+    
+    Parameters
+    ----------
+    cols: list of strings
+      Column names to be melted.
+      The dtypes of the columns should match.
+      Leftover columns are considered as 'id' columns.
+      When include is False, 'cols' refers to leftover columns.
+    names_to: string (default: 'name')
+      Name of the resulting column which will hold the names of the columns
+      to be melted
+    values_to: string (default: 'value')
+      Name of the resulting column which will hold the values of the columns
+      to be melted
+    include: bool
+      If True, cols are used to melt. Else, cols are considered as 'id'
+      columns and the leftover columns are melted.
+      
+    Returns
+    -------
+    pyspark dataframe
+    
+    Examples
+    --------
+    df = (pen.ts.select(['species', 
+                        'bill_length_mm', 
+                        'bill_depth_mm', 
+                        'flipper_length_mm']
+                        )
+          )
+    df.pivot_longer(cols = ['bill_length_mm', 
+                            'bill_depth_mm',
+                            'flipper_length_mm']
+                    )
+    # pivot by specifying 'id' columns to obtain the same result as above
+    # this is helpful when there are many columns to melt
+    df.pivot_longer(cols = 'species',
+                   include = False
+                   )             
+    '''
+    # assertions
+    cn = self.colnames
+    assert _is_string_or_string_list(cols),\
+        "arg 'cols' should be a string or a list of strings"
+    cols = _enlist(cols)
+    assert set(cols).issubset(cn),\
+        "arg 'cols' should be a subset of existing column names"
+    assert isinstance(include, bool),\
+        "arg 'include' should be a bool"
+    if not include:
+        cols = list(setlist(cn).difference(cols))
+        assert len(cols) > 0,\
+            "At least one column should be selected for melt"
+    
+    id_vars = set(cn).difference(cols)
+    assert isinstance(names_to, str),\
+        "arg 'names_to' should be a string"
+    assert isinstance(values_to, str),\
+        "arg 'values_to' should be a string"
+    assert names_to not in id_vars,\
+        "arg 'names_to' should not match a id column"
+    assert values_to not in id_vars,\
+        "arg 'values_to' should not match a id column"
+
+    # Bulding the pyspark expression for melt.
+    melt_cols = ', '.join([f"'{col}', `{col}`" for col in cols])
+    melt_expr = f"stack({len(cols)}, {melt_cols}) as (`{names_to}`, `{values_to}`)"
+  
+    return self.__data.select(*id_vars, F.expr(melt_expr))
