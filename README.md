@@ -16,7 +16,7 @@ basic methods
 - [x] summarise
 - [x] relocate
 - [x] rename
-- [x] filter ( df.filter((lhs, ">", rhs), by = ) ) **pondering**
+- [x] filter
 
 
 pipe methods
