@@ -62,6 +62,13 @@ class acc_on_pyspark():
   @property
   def dim(self):
     return (self.nrow, self.ncol)
+  
+  @property
+  def types(self):
+    names = self.__data.columns
+    types = [x.dataType.typeName() for x in self.__data.schema.fields]
+    res = dict(zip(names, types))
+    return res
 
 # cleaners --------------------------------------------------------------
   
@@ -2055,3 +2062,123 @@ class acc_on_pyspark():
                .distinct()
                )
     return res
+  
+  # nest and unnest ----------------------------------------------------------
+  def nest_by(self, by, name = "data"):
+    '''
+    nest
+    nest a pyspark dataframe per group as an array of structs
+
+    Parameters
+    ----------
+    by : string or list of strings, optional
+      column(s) to group by.
+      
+    name : string
+      Name of the nested column which will be created.
+
+    Returns
+    -------
+    res : pyspark dataframe
+    '''
+    by = self._clean_by(by)
+    other_cols_list = list(set(self.colnames).difference(by))
+    assert isinstance(name, str),\
+      "name should be a string"
+    assert name not in by,\
+      "name should not be one of the 'by' column names"
+    
+    res = (self.__data
+               .groupby(by)
+               .agg(F.collect_list(F.struct(*other_cols_list)).alias(name))
+               )
+    
+    return res
+  
+  nest = nest_by
+  
+  @staticmethod
+  def _get_typenames(a_struct):
+    assert isinstance(a_struct, pyspark.sql.types.StructType)
+    types = [x.dataType.typeName() for x in a_struct.fields]
+    return types
+  
+  @staticmethod
+  def _get_names(a_struct):
+    assert isinstance(a_struct, pyspark.sql.types.StructType)
+    names = [x.name for x in a_struct.fields]
+    return names
+  
+  def unnest_wider(self, colname):
+    '''
+    unnest_wider
+    creates multiple columns from a struct column
+
+    Parameters
+    ----------
+    colname : string
+      Name of the column of struct type.
+
+    Returns
+    -------
+    pyspark dataframe
+    '''
+    colname = self._clean_column_names(colname)[0]
+    struct_colname  = self.__data.select(colname).schema
+    typename_column = acc_on_pyspark._get_typenames(struct_colname)[0]
+    assert typename_column == 'struct',\
+      "schema of colname column should be of type struct"
+    names_column = acc_on_pyspark._get_names(struct_colname)
+    assert _is_unique_list(names_column),\
+      "names in colname struct should not be duplicated"
+    rest_columns = list(set(self.columns).difference(colname))
+    assert len(set(names_column).intersection(rest_columns)) == 0,\
+      ("unnest_wider results in duplicate column names. "
+       "Try renaming columns other than colname")
+    
+    res = (self.__data
+              .select('*', colname + '.*')
+              .drop(colname)
+              )
+    
+    return res
+  
+  # unnest longer is pending and depends on pivot_longer
+  
+  def unnest(self, colname):
+    '''
+    unnest
+    unnests an column where each element is an array of structs
+
+    Parameters
+    ----------
+    colname : string
+      Name of the column of struct type.
+
+    Returns
+    -------
+    pyspark dataframe
+    '''
+    colname = self._clean_column_names(colname)[0]
+    struct_colname  = self.__data.select(colname).schema
+    typename_column = acc_on_pyspark._get_typenames(struct_colname)[0]
+    assert typename_column == 'array',\
+      "schema of colname column should be of type array"
+    
+    res = (self.__data
+               .select('*', F.explode_outer(colname).alias("_exploded"))
+               .drop(colname)
+               .withColumnRenamed("_exploded", colname)
+               )
+    
+    res_names = res.columns
+    res_types = [x.dataType.typeName() for x in res.schema.fields]
+    res_dict = dict(zip(res_names, res_types))
+    
+    if res_dict[colname] == "struct":
+      res = (res.select('*', colname + '.*')
+                .drop(colname)
+                )
+    
+    return res
+    

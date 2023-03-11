@@ -1083,3 +1083,49 @@ def test_union(penguins_data):
   assert len(df1.ts.union(df2).columns) == len(df1.columns)
   
   spark.stop()
+  
+def test_nest_by(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  
+  res = pen.ts.nest_by(by = ['species', 'island'])
+  assert isinstance(res, pyspark.sql.dataframe.DataFrame)
+  assert len(res.columns) == 3
+  assert res.ts.types['data'] == "array"
+  
+  spark.stop()
+  
+def test_unnest_wider(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  
+  res = (pen.ts.nest_by(by = ['species', 'island'])
+            .withColumn('data_exploded', F.explode('data'))
+            .drop('data')
+            )
+  assert isinstance(res, pyspark.sql.dataframe.DataFrame)
+  assert len(res.columns) == 3
+  assert res.ts.types['data_exploded'] == "struct"
+  
+  spark.stop()
+
+def test_unnest(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  
+  res  = pen.ts.nest_by(by = ['species', 'island'])
+  res2 = res.ts.unnest('data')
+  
+  assert isinstance(res, pyspark.sql.dataframe.DataFrame)
+  assert pen.ts.types == res2.ts.types
+  
+  spark.stop()
