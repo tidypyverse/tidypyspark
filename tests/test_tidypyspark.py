@@ -1110,10 +1110,10 @@ def test_pivot_longer():
 
   # Test the pivot_longer function
   df1 = pivotDF.ts.pivot_longer(names_to = 'Country',
-                           values_to = 'Total',
-                           cols = ['Canada', 'China', 'Mexico'],
-                           include = True
-                          )
+                                values_to = 'Total',
+                                cols = ['Canada', 'China', 'Mexico'],
+                                include = True,
+                                )
   # Output
   # +----+-------+-------+-----+
   # | USA|Product|Country|Total|
@@ -1155,6 +1155,26 @@ def test_pivot_longer():
   assert isinstance(df2, pyspark.sql.dataframe.DataFrame)
   assert df2.count() == 4
   assert set(df2.columns) == set(['China', 'USA', 'Product', 'Mexico', 'Country', 'Total'])
+
+  # Test the pivot_longer function with values_drop_na = True
+  # Test the pivot_longer function
+  df3 = pivotDF.ts.pivot_longer(names_to = 'Country',
+                                values_to = 'Total',
+                                cols = ['Canada'],
+                                include = True,
+                                values_drop_na = True
+                               )
+  
+  # Output
+  # +----+-------+-----+------+-------+-----+
+  # | USA|Product|China|Mexico|Country|Total|
+  # +----+-------+-----+------+-------+-----+
+  # |1000| Banana|  400|  null| Canada| 2000|
+  # |1500|Carrots| 1200|  null| Canada| 2000|
+  # +----+-------+-----+------+-------+-----+
+
+  assert df3.count() == 2
+  assert set(df3.columns) == set(['USA', 'Product', 'China', 'Mexico', 'Country', 'Total'])
   
   spark.stop()
 
@@ -1195,7 +1215,8 @@ def test_pivot_wider():
   # Test the pivot_wider function
   df1 = df.ts.pivot_wider(id_cols = "id",
                           names_from = ['name', 'name2', 'name3'],
-                          values_from = "dept"
+                          values_from = "dept",
+                          names_expand = True
                           )
   # Output
   # ---+--------------------------+------------------------+------------------------+----------------------+------------------------+----------------------+----------------------+--------------------+
@@ -1211,18 +1232,128 @@ def test_pivot_wider():
   # Test the pivot_wider function
   df2 = df.ts.pivot_wider(id_cols = ["id", "dept3"],
                           names_from = ['name', 'name2'],
-                          values_from = ['dept', 'dept2']
+                          values_from = ['dept', 'dept2'],
+                          names_expand = True
                           )
   # Output
-  # ---+-----+---------------------+----------------------+-------------------+--------------------+-------------------+--------------------+-----------------+------------------+
+  # +---+-----+---------------------+----------------------+-------------------+--------------------+-------------------+--------------------+-----------------+------------------+
   # | id|dept3|jordan__jordan_2_dept|jordan__jordan_2_dept2|jack__jordan_2_dept|jack__jordan_2_dept2|jordan__jack_2_dept|jordan__jack_2_dept2|jack__jack_2_dept|jack__jack_2_dept2|
   # +---+-----+---------------------+----------------------+-------------------+--------------------+-------------------+--------------------+-----------------+------------------+
-  # |  1| DS_3|                 [DS]|                [DS_2]|               null|                null|               null|                null|             null|              null|
-  # |  2| DS_3|                 null|                  null|               null|                null|               null|                null|             [DS]|            [DS_2]|
-  # |  1|SDE_3|                 null|                  null|               null|                null|               null|                null|            [SDE]|           [SDE_2]|
-  # |  2|SDE_3|                 null|                  null|               null|                null|               null|                null|            [SDE]|           [SDE_2]|
-  # |  1| PM_3|                 null|                  null|               null|                null|               null|                null|             [PM]|            [PM_2]|
-  # |  2| PM_3|                 null|                  null|               null|                null|               null|                null|             [PM]|            [PM_2]|
+  # |  1| DS_3|                   DS|                  DS_2|               null|                null|               null|                null|             null|              null|
+  # |  2| DS_3|                 null|                  null|               null|                null|               null|                null|               DS|              DS_2|
+  # |  1|SDE_3|                 null|                  null|               null|                null|               null|                null|              SDE|             SDE_2|
+  # |  2|SDE_3|                 null|                  null|               null|                null|               null|                null|              SDE|             SDE_2|
+  # |  1| PM_3|                 null|                  null|               null|                null|               null|                null|               PM|              PM_2|
+  # |  2| PM_3|                 null|                  null|               null|                null|               null|                null|               PM|              PM_2|
   # +---+-----+---------------------+----------------------+-------------------+--------------------+-------------------+--------------------+-----------------+------------------+
   assert df2.count() == 6
   assert len(df2.columns) == 10
+
+  # Test the pivot_wider function with names_expand = False (default value)
+  df3 = df.ts.pivot_wider(id_cols = ["id", "dept3"],
+                          names_from = ['name', 'name2'],
+                          values_from = ['dept', 'dept2'],
+                         )
+  # Output
+  # +---+-----+---------------------+----------------------+-----------------+------------------+
+  # | id|dept3|jordan__jordan_2_dept|jordan__jordan_2_dept2|jack__jack_2_dept|jack__jack_2_dept2|
+  # +---+-----+---------------------+----------------------+-----------------+------------------+
+  # |  1| DS_3|                   DS|                  DS_2|             null|              null|
+  # |  2| DS_3|                 null|                  null|               DS|              DS_2|
+  # |  1|SDE_3|                 null|                  null|              SDE|             SDE_2|
+  # |  2|SDE_3|                 null|                  null|              SDE|             SDE_2|
+  # |  1| PM_3|                 null|                  null|               PM|              PM_2|
+  # |  2| PM_3|                 null|                  null|               PM|              PM_2|
+  # +---+-----+---------------------+----------------------+-----------------+------------------+
+  assert df3.count() == 6
+  assert len(df3.columns) == 6
+
+  # Test the pivot_wider function with values_fn = "F.first" and names_prefix = "new_col"
+  df4 = df.ts.pivot_wider(id_cols = ["id", "dept3"],
+                          names_from = ['name', 'name2'],
+                          values_from = ['dept', 'dept2'],
+                          values_fn = "F.first",
+                          names_prefix = "new_col"
+                          )
+  # Output
+  # +---+-----+------------------------------+-------------------------------+--------------------------+---------------------------+
+  # | id|dept3|new_col__jordan__jordan_2_dept|new_col__jordan__jordan_2_dept2|new_col__jack__jack_2_dept|new_col__jack__jack_2_dept2|
+  # +---+-----+------------------------------+-------------------------------+--------------------------+---------------------------+
+  # |  1| DS_3|                            DS|                           DS_2|                      null|                       null|
+  # |  1| PM_3|                          null|                           null|                        PM|                       PM_2|
+  # |  1|SDE_3|                          null|                           null|                       SDE|                      SDE_2|
+  # |  2| DS_3|                          null|                           null|                        DS|                       DS_2|
+  # |  2| PM_3|                          null|                           null|                        PM|                       PM_2|
+  # |  2|SDE_3|                          null|                           null|                       SDE|                      SDE_2|
+  # +---+-----+------------------------------+-------------------------------+--------------------------+---------------------------+
+  assert df4.count() == 6
+  assert len(df4.columns) == 6
+  assert set(df4.columns) == set(['id', 'dept3', 'new_col__jordan__jordan_2_dept', 'new_col__jordan__jordan_2_dept2',
+                                  'new_col__jack__jack_2_dept', 'new_col__jack__jack_2_dept2'])
+  
+  # Test the pivot_wider function with values_fn = {'dept': 'F.first', 'dept2': 'F.last'}
+  df5 = df.ts.pivot_wider(id_cols = ["id", "dept3"],
+                          names_from = ['name'],
+                          values_from = ['dept', 'dept2'],
+                          values_fn = {'dept': 'F.first', 'dept2': 'F.last'}
+                          )
+  # Output
+  # +---+-----+-----------+------------+---------+----------+
+  # | id|dept3|jordan_dept|jordan_dept2|jack_dept|jack_dept2|
+  # +---+-----+-----------+------------+---------+----------+
+  # |  1| DS_3|         DS|        DS_2|     null|      null|
+  # |  1| PM_3|       null|        null|       PM|      PM_2|
+  # |  1|SDE_3|       null|        null|      SDE|     SDE_2|
+  # |  2| DS_3|       null|        null|       DS|      DS_2|
+  # |  2| PM_3|       null|        null|       PM|      PM_2|
+  # |  2|SDE_3|       null|        null|      SDE|     SDE_2|
+  # +---+-----+-----------+------------+---------+----------+
+  assert df5.count() == 6
+  assert len(df5.columns) == 6
+  assert set(df5.columns) == set(['id', 'dept3', 'jordan_dept', 'jordan_dept2', 'jack_dept', 'jack_dept2'])
+  
+  # Test the pivot_wider function with values_fill = {'dept': 3, 'dept2': []} and values_fn = {'dept': 'F.first'}
+  df6 = df.ts.pivot_wider(id_cols = ["id", "dept3"],
+                          names_from = ['name'],
+                          values_from = ['dept', 'dept2'],
+                          values_fill = {'dept': 3, 'dept2': []},
+                          values_fn = {'dept': 'F.first'},
+                          )
+  
+  # Output
+  # +---+-----+-----------+------------+---------+----------+
+  # | id|dept3|jordan_dept|jordan_dept2|jack_dept|jack_dept2|
+  # +---+-----+-----------+------------+---------+----------+
+  # |  1| DS_3|         DS|      [DS_2]|        3|        []|
+  # |  2| DS_3|          3|          []|       DS|    [DS_2]|
+  # |  1|SDE_3|          3|          []|      SDE|   [SDE_2]|
+  # |  2|SDE_3|          3|          []|      SDE|   [SDE_2]|
+  # |  1| PM_3|          3|          []|       PM|    [PM_2]|
+  # |  2| PM_3|          3|          []|       PM|    [PM_2]|
+  # +---+-----+-----------+------------+---------+----------+
+  assert df6.count() == 6
+  assert len(df6.columns) == 6
+  assert set(df6.columns) == set(['id', 'dept3', 'jordan_dept', 'jordan_dept2', 'jack_dept', 'jack_dept2'])
+  
+  # Test the pivot_wider function with values_fill = []
+  df7 = df.ts.pivot_wider(id_cols = ["id", "dept3"],
+                          names_from = ['name'],
+                          values_from = ['dept', 'dept2'],
+                          values_fill = []
+                          )
+  # Output
+  # +---+-----+-----------+------------+---------+----------+
+  # | id|dept3|jordan_dept|jordan_dept2|jack_dept|jack_dept2|
+  # +---+-----+-----------+------------+---------+----------+
+  # |  1| DS_3|       [DS]|      [DS_2]|       []|        []|
+  # |  2| DS_3|         []|          []|     [DS]|    [DS_2]|
+  # |  1|SDE_3|         []|          []|    [SDE]|   [SDE_2]|
+  # |  2|SDE_3|         []|          []|    [SDE]|   [SDE_2]|
+  # |  1| PM_3|         []|          []|     [PM]|    [PM_2]|
+  # |  2| PM_3|         []|          []|     [PM]|    [PM_2]|
+  # +---+-----+-----------+------------+---------+----------+
+  assert df7.count() == 6
+  assert len(df7.columns) == 6
+  assert set(df7.columns) == set(['id', 'dept3', 'jordan_dept', 'jordan_dept2', 'jack_dept', 'jack_dept2'])
+
+  spark.stop()
