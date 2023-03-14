@@ -16,17 +16,13 @@ basic methods
 - [x] summarise
 - [x] relocate
 - [x] rename
-- [ ] filter ( df.filter((lhs, ">", rhs), by = ) ) **pondering**
+- [x] filter
 
-to methods
-----------
-- [ ] to_pandas (deffered)
 
 pipe methods
 ------------
 - [x] pipe (Sr)
 - [x] pipe_tee (Sr)
-- [ ] glimpse (deffered)
 
 Join methods (Ja)
 ------------
@@ -37,12 +33,12 @@ Join methods (Ja)
 
 Bind methods (Sr)
 ------------
-- [ ] rbind, cbind
+- [x] rbind, union
 
 pivot methods (Ja)
 -------------
-- [ ] pivot_wider
-- [ ] pivot_longer
+- [x] pivot_wider
+- [x] pivot_longer
 
 Count methods (Sr)
 -------------
@@ -57,9 +53,16 @@ slice methods
 
 na methods
 ------------
-- [ ] drop_na (Sr)
-- [ ] replace_na (Sr)
-- [ ] fill_na (Sr)
+- [ ] drop_na (Ja)
+- [ ] replace_na (Ja)
+- [ ] fill_na (Ja)
+
+nest methods
+------------
+- [x] nest
+- [x] unnest
+- [x] unnest_wider
+- [ ] unnest_longer
 
 Lower priority things
 ---------------------
