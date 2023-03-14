@@ -2079,6 +2079,435 @@ class acc_on_pyspark():
                )
     return res
   
+  # pivot methods ------------------------------------------------------------
+
+  def pivot_wider(self, 
+                  names_from,
+                  values_from,
+                  values_fill = None, # implement
+                  values_fn = None, # implement
+                  id_cols = None,
+                  sep = "__",
+                  names_prefix = "",
+                  names_expand = False,
+                  ):
+    '''
+    Pivot data from long to wide
+    
+    Parameters
+    ----------
+    names_from: string or list of strings
+            column names whose unique combinations are expected to become column
+            new names in the result
+        
+    values_from: string or list of strings
+        column names to fill the new columns with
+    
+    values_fill: scalar, list or dict (default is None)
+        Optionally, a (scalar) value that specifies what each value should be filled in with when missing.
+        This can be a dictionary if you want to apply different fill values to different value columns.
+        Make sure only compatible data types are used in conjunction with the pyspark column.
+        Missing values can only be filled with a scalar, or empty python list value.
+    
+    values_fn: string(of pyspark functions) or a dict of strings(of pyspark funtions) (default is None)
+        A function to handle multiple values per row in the result.
+        When a dict, keys should be a subset of arg 'values_from'.
+        F.collect_list is applied by default in case nothing is specified.
+        The string pf pyspark functions should be passed as a string starting with 'F.'
+        This is to indicate that the function is from pyspark.
+        Unlist the pivot columns to scalar values if and only if:
+        1. values_fn is None and values_fn is None
+        2. all the pivot columns are of type list/array and all the pivot_cols have values with a maximum length of 1.
+    
+    id_cols: string or list of strings, default is None
+        Names of the columns that should uniquely identify an observation 
+        (row) after widening (columns of the original dataframe that are
+        supposed to stay put)
+        
+    sep: string (default is "__")
+        seperator to use while creating resulting column names
+        
+    names_prefix: string (default is "")
+        prefix for new columns
+
+    names_expand: boolean (default is False)
+        When True, he output will contain column names corresponding 
+        to a complete expansion of all possible values in names_from. 
+        Implicit factor levels that aren't represented in the data will become explicit. 
+        
+    Returns
+    -------
+    pyspark dataframe
+    
+    Examples
+    --------
+    pen.ts.pivot_wider(id_cols = "island",
+                       names_from  = "sex,
+                       values_from = "bill_length_mm"
+                      )
+                              
+    
+    # All three inputs: 'id_cols', 'names_from', 'values_from' can be lists
+    pen.ts.pivot_wider(id_cols = ["island", "sex"], 
+                      names_from  = "species",
+                      values_from = "bill_length_mm"
+                      )
+                              
+    pen.ts.pivot_wider(
+        id_cols       = ["island", "sex"]
+        , names_from  = "species"
+        , values_from = ["bill_length_mm", "bill_depth_mm"]
+        )
+    
+    pen.ts.pivot_wider(id_cols = ["island", "sex"]
+                              , names_from  = ["species", "year"]
+                              , values_from = "bill_length_mm"
+                              )
+                              
+    pen.ts.pivot_wider(
+        id_cols       = ["island", "sex"]
+        , names_from  = ["species", "year"]
+        , values_from = ["bill_length_mm", "bill_depth_mm"]
+        )
+    
+    # when id_cols is empty, all columns except the columns from
+    # `names_from` and `values_from` are considered as id_cols
+    (pen.ts.select(['flipper_length_mm', 'body_mass_g'], include = False)
+            .pivot_wider(names_from    = ["species", "year"]
+                  , values_from = ["bill_length_mm", "bill_depth_mm"]
+                  )
+     )
+
+    # use some prefix for new columns
+    pen.ts.pivot_wider(id_cols       = "island"
+                              , names_from  = "sex"
+                              , values_from = "bill_length_mm"
+                              , names_prefix = "gender_"
+                              )
+    
+    '''
+    
+    cn = self.colnames
+    
+    names_from = self._clean_column_names(names_from)
+    values_from = self._clean_column_names(values_from)
+
+    assert len(set(values_from).intersection(names_from)) == 0,\
+        ("arg 'names_from' and 'values_from' should not "
+        "have common column names"
+        )
+    names_values_from = set(values_from).union(names_from)
+    
+    if id_cols is None:
+        id_cols = list(set(cn).difference(names_values_from))
+        if len(id_cols) == 0:
+            raise Exception(
+                ("'id_cols' is turning out to be empty. Choose the "
+                "'names_from' and 'values_from' appropriately or specify "
+                "'id_cols' explicitly."
+                ))
+        else:
+            print("'id_cols' chosen: " + str(id_cols))
+    else:
+        id_cols = self._clean_column_names(id_cols)
+        assert len(set(id_cols).intersection(names_values_from)) == 0,\
+            ("arg 'id_cols' should not have common names with either "
+            "'names_from' or 'values_from'"
+            )
+        
+    assert (values_fn is None
+            or isinstance(values_fn, dict)
+            or isinstance(values_fn, str)
+            ),\
+      "arg 'values_fn' should be a string or a dictionary of strings."
+    
+    if isinstance(values_fn, str):
+      assert values_fn.startswith('F.'),\
+        "arg 'values_fn' should be a string starting with 'F.' It indicates a pyspark function."
+    elif isinstance(values_fn, dict):
+      assert set(values_fn.keys()).issubset(set(values_from)),\
+        "arg 'values_fn' should be a dictionary with keys as a subset of 'values_from'"
+      assert all([fn.startswith('F.') for fn in values_fn.values()]),\
+        "arg 'values_fn' should be a dictionary of strings starting with 'F.' It indicates a pyspark function."
+      
+    if isinstance(values_fill, dict):
+      assert set(values_fill.keys()).issubset(set(values_from)),\
+        "arg 'values_fill' should be a dictionary with keys as a subset of 'values_from'"
+    
+    assert isinstance(sep, str),\
+        "arg 'sep' should be a string"
+        
+    assert isinstance(names_prefix, str),\
+        "arg 'names_prefix' should be a string without spaces"
+    assert ' ' not in names_prefix,\
+        "arg 'names_prefix' should be a string without spaces"
+    
+    assert isinstance(names_expand, bool),\
+        "arg 'names_expand' should be a boolean"
+    
+    df = self.__data
+
+    # Construct the pyspark expression for the pivot_col via names_from
+    # e.g. [Column<'name'>, Column<'name2'>] for names_from = ['name', 'name2']
+    names_from_pyspark_expr = [F.col(name) for name in names_from]
+
+    # Create the pivot column in the dataframe via names_from_pyspark_expr
+    # e.g Column<'name__name2'> for names_from = ['name', 'name2'], where sep = '__'
+    df = df.withColumn('pivot_col', F.concat_ws(sep, *names_from_pyspark_expr))
+
+    # Construct the pivot columns via names_from and names_from_pyspark_expr
+    # When names_expand = True, it will return all possible combinations of values in names_from
+    # When names_expand = False, it will return the unique values in names_from
+    pivot_cols = self._get_pivot_columns(names_from, sep, names_expand, df, names_from_pyspark_expr)
+
+    # Construct the pyspark expression for the values_from.
+    # e.g. [Column<'avg(dept) AS dept'>, Column<'collect_list(dept2) AS dept2'>] 
+    # for values_from = ['dept', 'dept2'] and values_fn = {'dept': 'avg', 'dept2': 'collect_list'}
+    values_from_pyspark_expr = self._construct_pyspark_expr_from_values_from(values_from, values_fn)
+
+    # Core logic for pivot_wider
+    df = (df.groupBy(id_cols)
+            .pivot('pivot_col', pivot_cols)
+            .agg(*values_from_pyspark_expr)
+          )
+
+    # Get the new pivot columns
+    new_pivot_cols = list(set(df.columns).difference(id_cols))
+
+    # Fill missing values in the pivot columns.
+    df = self._fill_missing_values_for_pivot_columns(values_fill, df, new_pivot_cols)
+
+    # Unlist the pivot columns to scalar values if and only if:
+    # 1. values_fn is None and values_fn is None
+    # 2. all the pivot columns are of type list/array and all the pivot_cols have values with a maximum length of 1.
+    df = self._unlist_pivot_cols(values_fill, values_fn, df, new_pivot_cols)    
+
+    # Replace empty lists or sets with None
+    for col in new_pivot_cols:
+        col_dtype = df.select(col).dtypes[0][1]
+        if col_dtype.startswith('array') or col_dtype.startswith('map'):
+            df = df.withColumn(col, F.when(F.size(col) > 0, F.col(col)).otherwise(None))
+
+    # Rename the pivot columns in case names_prefix is passed explicitly.
+    if names_prefix is not None and  names_prefix != "":
+        df = df.select([F.col(col).alias(names_prefix + sep + col) \
+                        if col in new_pivot_cols else col for col in df.columns])
+
+    return df
+
+  def pivot_longer(self, 
+                  cols,
+                  names_to = "name",
+                  values_to = "value",
+                  include = True,
+                  values_drop_na = False
+                  ):
+    '''
+    Pivot from wide to long
+    aka melt
+    
+    Parameters
+    ----------
+    cols: list of strings
+      Column names to be melted.
+      The dtypes of the columns should match.
+      Leftover columns are considered as 'id' columns.
+      When include is False, 'cols' refers to leftover columns.
+    names_to: string (default: 'name')
+      Name of the resulting column which will hold the names of the columns
+      to be melted
+    values_to: string (default: 'value')
+      Name of the resulting column which will hold the values of the columns
+      to be melted
+    include: bool (default: True)
+      If True, cols are used to melt. Else, cols are considered as 'id'
+      columns and the leftover columns are melted.
+    values_drop_na: bool (default: False)
+          Whether to drop the rows corresponding to missing value in the result
+
+    Returns
+    -------
+    pyspark dataframe
+    
+    Examples
+    --------
+    df = (pen.ts.select(['species', 
+                        'bill_length_mm', 
+                        'bill_depth_mm', 
+                        'flipper_length_mm']
+                        )
+          )
+    df.pivot_longer(cols = ['bill_length_mm', 
+                            'bill_depth_mm',
+                            'flipper_length_mm']
+                    )
+
+    # pivot by specifying 'id' columns to obtain the same result as above
+    # this is helpful when there are many columns to melt
+    df.pivot_longer(cols = 'species',
+                   include = False
+                   )
+
+    # If you want to drop the rows corresponding to missing value in the result,
+    # set values_drop_na to True
+    df.pivot_longer(cols = ['bill_length_mm',
+                            'bill_depth_mm'],
+                    values_drop_na = True
+                    )         
+              
+    '''
+    # assertions
+    cn = self.colnames
+    cols = self._clean_column_names(cols)
+
+    assert isinstance(include, bool),\
+        "arg 'include' should be a bool"
+    if not include:
+        cols = list(setlist(cn).difference(cols))
+        assert len(cols) > 0,\
+            "At least one column should be selected for melt"
+    
+    id_vars = set(cn).difference(cols)
+    assert isinstance(names_to, str),\
+        "arg 'names_to' should be a string"
+    assert isinstance(values_to, str),\
+        "arg 'values_to' should be a string"
+    assert names_to not in id_vars,\
+        "arg 'names_to' should not match a id column"
+    assert values_to not in id_vars,\
+        "arg 'values_to' should not match a id column"
+    assert isinstance(values_drop_na, bool),\
+        "arg 'values_drop_na' should be a bool"
+
+    # Bulding the pyspark expression for melt.
+    # Sample pyspark expression: stack(3, 'bill_length_mm', `bill_length_mm`, 'bill_depth_mm', `bill_depth_mm`,
+    #                            'flipper_length_mm', `flipper_length_mm`) as (`name`, `value`)
+    melt_cols = ', '.join([f"'{col}', `{col}`" for col in cols])
+    melt_expr = f"stack({len(cols)}, {melt_cols}) as (`{names_to}`, `{values_to}`)"
+  
+    # Melt/ pivot_longer core logic.
+    res = self.__data.select(*id_vars, F.expr(melt_expr))
+
+    # Drop rows with null values in the values_to column
+    if values_drop_na:
+        res = res.filter(F.col(values_to).isNotNull())
+
+    return res
+  
+  def _construct_pyspark_expr_from_values_from(self, values_from, values_fn):
+      
+    if values_fn is None:
+      
+      # Since values_fn is None, we do a just a simple collect_list.
+      # e.g. [Column<'collect_list(dept) AS dept'>, Column<'collect_list(dept2) AS dept2'>] 
+      # for values_from = ['dept', 'dept2'] and values_fn = None
+      values_from_pyspark_expr = [F.collect_list(F.col(vf)).alias(vf) for vf in values_from]
+    elif isinstance(values_fn, str):
+      
+      # Apply the function name passed in values_fn to each column in values_from.
+      # e.g [Column<'sum(salary) AS salary'>, Column<'sum(salary2) AS salary2'>] 
+      # for values_from = ['salary', 'salary2'] and values_fn = 'sum'
+      values_from_pyspark_expr = [eval(f"{values_fn}(F.col('{vf}')).alias('{vf}')") for vf in values_from]
+    elif isinstance(values_fn, dict):
+      
+      values_from_pyspark_expr = []
+      for vf in values_from:
+        # If the column name is not present in the dictionary, we do a simple collect_list.
+        # Else, we use the function name passed in the dictionary.
+        # e.g. [Column<'collect_list(dept) AS dept'>, Column<'sum(salary) AS salary'>] 
+        # for values_from = ['dept', 'salary'] and values_fn = {'salary': 'sum'}
+        func_expr = values_fn.get(vf, 'F.collect_list')
+        values_from_pyspark_expr.append(eval(f"{func_expr}(F.col('{vf}')).alias('{vf}')"))
+
+    return values_from_pyspark_expr
+  
+  def _get_pivot_columns(self, names_from, sep, names_expand, df, names_from_pyspark_expr):
+      
+    # when names_expand is True, all unique combinations of names_from columns are taken
+    # even if they are not present in the original dataframe
+    if names_expand:
+      # cartesian product of names_from
+      cartesian_product_names_from_df = df.select(names_from[0]).distinct()
+      if len(names_from) > 1:
+          for i in range(1, len(names_from)):
+              cartesian_product_names_from_df = cartesian_product_names_from_df.crossJoin(
+                df.select(names_from[i]).distinct()
+                )
+    
+      # Construct the pivot_col from names_from
+      cartesian_product_names_from_df = (cartesian_product_names_from_df.withColumn('pivot_col',
+                                                                      F.concat_ws(sep, *names_from_pyspark_expr)
+                                                                                  )
+                                      )
+
+      # Construct the unique combinations of names_from columns in a python list
+      pivot_cols = [row.pivot_col for row in cartesian_product_names_from_df.select('pivot_col').collect()] 
+    else:
+      pivot_cols = [row.pivot_col for row in df.select('pivot_col').distinct().collect()]
+      
+    return pivot_cols
+  
+  def _fill_missing_values_for_pivot_columns(self, values_fill, df, new_pivot_cols):
+      
+    # values_fill = {'dept': 'fill', 'dept2': []}
+    # Construct a dictionary to fill the null values in the pivot columns.
+    # The dictionary will only contain scalar values.
+    new_values_fill = {}
+
+    if values_fill is not None:
+        if isinstance(values_fill, dict):
+            
+            for col in values_fill:
+              # e.g cols_ending_with_col = ['jack_dept', 'jordan_dept'] for col = 'dept'
+                new_cols_ending_with_pivot_col = [c for c in new_pivot_cols if c.endswith('_' + col)]
+              # e.g new_values_fill['jack_dept'] = 'fill' for col = 'dept'
+                for new_col in new_cols_ending_with_pivot_col:
+                    missing_value_to_be_filled = values_fill[col]
+                    # Fill the null values in the pivot columns with the empty list.
+                    if isinstance(missing_value_to_be_filled, list):
+                      df = df.withColumn(new_col,
+                                        F.when(F.col(new_col).isNull(), F.array()).otherwise(F.col(new_col))
+                                        )
+                    elif np.isscalar(missing_value_to_be_filled):
+                      # Add the scaler value to the dictionary.
+                      new_values_fill[new_col] = values_fill[col]              
+        elif isinstance(values_fill, list):
+          
+          # Fill the null values in the pivot columns with the empty list.
+          for new_pivot_col in new_pivot_cols:
+            df = df.withColumn(new_pivot_col, 
+                               F.when(F.col(new_pivot_col).isNull(), F.array()).otherwise(F.col(new_pivot_col))
+                               )
+        elif np.isscalar(values_fill):
+          new_values_fill = {col: values_fill for col in new_pivot_cols}
+       
+        # Fill the null values in the pivot columns with the new renamed dictinary.
+        df = df.na.fill(new_values_fill)
+      
+    return df
+  
+  def _unlist_pivot_cols(self, values_fill, values_fn, df, new_pivot_cols):
+      
+    if values_fill is None and values_fn is None:
+      # Get the data types of the pivot columns.
+      col_dtypes = [df.select(col).dtypes[0][1] for col in new_pivot_cols]
+
+      # If all the pivot columns are of type array, then proceed to convert them to scalars 
+      # if subsequent conditions are met.
+      if all([dtype.startswith('array') for dtype in col_dtypes]):
+      # Check if all the pivot columns of type array have a maximum of only one element.
+        is_column_scalar = [(df.select(pivot_col)
+                              .filter(~F.isnull(pivot_col))
+                              .filter(F.size(pivot_col) > 1)
+                              .count()
+                            ) == 0 for pivot_col in new_pivot_cols]
+        # If all the pivot columns of type array have a maximum of only one element, unlist them.
+        if all(is_column_scalar):
+          for pivot_col in new_pivot_cols:
+            df = df.withColumn(pivot_col, F.col(pivot_col).getItem(0))
+            
+    return df
+  
   # nest and unnest ----------------------------------------------------------
   def nest_by(self, by, name = "data"):
     '''

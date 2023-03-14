@@ -37,8 +37,8 @@ Bind methods (Sr)
 
 pivot methods (Ja)
 -------------
-- [ ] pivot_wider
-- [ ] pivot_longer
+- [x] pivot_wider
+- [x] pivot_longer
 
 Count methods (Sr)
 -------------
