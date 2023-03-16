@@ -437,9 +437,8 @@ class acc_on_pyspark():
                .rdd.map(lambda x: x[0])
                .collect()
                )
-    if as_series:
-      import pandas as pd
-      res = pd.Series(res, name = column_name)
+    import pandas as pd
+    res = pd.Series(res, name = column_name[0])
       
     return res
   

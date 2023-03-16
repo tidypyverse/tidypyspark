@@ -18,29 +18,40 @@ basic methods
 - [x] rename
 - [x] filter
 
+to_methods
+----------
+- [x] pull (to_series)
+- [x] to_list
+- [x] to_dict
+- [x] to_pandas
+
+show_methods
+------------
+- [ ] glimpse (Su)
 
 pipe methods
 ------------
-- [x] pipe (Sr)
-- [x] pipe_tee (Sr)
+- [x] pipe
+- [x] pipe_tee 
 
-Join methods (Ja)
+Join methods
 ------------
 - [x] join
 - [x] inner, outer/full, left, right
 - [x] semi, anti
 - [x] cross
 
-Bind methods (Sr)
+Bind methods
 ------------
-- [x] rbind, union
+- [x] rbind
+- [x] union
 
-pivot methods (Ja)
+pivot methods
 -------------
 - [x] pivot_wider
 - [x] pivot_longer
 
-Count methods (Sr)
+Count methods
 -------------
 - [x] count
 - [x] add_count
@@ -48,21 +59,21 @@ Count methods (Sr)
 slice methods
 -------------
 - [ ] slice_sample (Sr)
-- [x] slice_min (Sr)
-- [x] slice_max (Sr)
+- [x] slice_min
+- [x] slice_max
 
 na methods
 ------------
 - [ ] drop_na (Ja)
 - [ ] replace_na (Ja)
-- [ ] fill_na (Ja)
+- [x] fill_na
 
 nest methods
 ------------
 - [x] nest
 - [x] unnest
 - [x] unnest_wider
-- [ ] unnest_longer
+- [ ] unnest_longer (Sr)
 
 Lower priority things
 ---------------------
