@@ -7,6 +7,7 @@ import pyspark
 import pyspark.sql.functions as F
 from pyspark.sql.window import Window
 import re
+import sys
 import numpy as np
 from collections_extended import setlist
 from collections import Counter
@@ -289,6 +290,10 @@ class acc_on_pyspark():
     _create_windowspec does not validates inputs
     '''
     
+    valid_kwarg_names = ["by", "order_by", "range_between", "rows_between"]
+    assert set(kwargs.keys()).issubset(valid_kwarg_names),\
+      f"Input kwarg should have one of these names: {valid_kwarg_names}"
+    
     if 'by' in kwargs:
       win = Window.partitionBy(kwargs['by'])
     
@@ -362,7 +367,7 @@ class acc_on_pyspark():
 
     Returns
     -------
-    res : pyspark dataframe
+    pyspark dataframe
     
     Examples
     --------
@@ -387,6 +392,97 @@ class acc_on_pyspark():
     
     res = self.__data.join(groups_numbered, how = "inner", on = by)       
     return res
+  
+  def to_list(self, column_name):
+    '''
+    to_list
+    collect a column as python list
+
+    Parameters
+    ----------
+    column_name : str
+      Name of the column to be colected.
+
+    Returns
+    -------
+    list
+    '''
+    assert isinstance(column_name, str)
+    column_name = self._clean_column_names(column_name)
+    res = (self.__data
+               .select(column_name)
+               .rdd.map(lambda x: x[0])
+               .collect()
+               )
+    return res
+  
+  def pull(self, column_name):
+    '''
+    pull
+    collect a column as pandas series
+
+    Parameters
+    ----------
+    column_name : str
+      Name of the column to be colected.
+
+    Returns
+    -------
+    pandas series
+    '''
+    assert isinstance(column_name, str)
+    column_name = self._clean_column_names(column_name)
+    res = (self.__data
+               .select(column_name)
+               .rdd.map(lambda x: x[0])
+               .collect()
+               )
+    if as_series:
+      import pandas as pd
+      res = pd.Series(res, name = column_name)
+      
+    return res
+  
+  # alias for pull
+  to_series = pull
+  
+  def to_dict(self):
+    '''
+    to_dict
+    collect as a dict where keys are column names and
+    values are lists
+
+    Returns
+    -------
+    dict
+    
+    Notes
+    -----
+    Each column is pulled separately to reduce the load on the executor.
+    '''
+    res_dict = {}
+    for acolname in self.colnames:
+      res_dict[acolname] = (self.__data
+                                .select(acolname)
+                                .rdd.map(lambda x: x[0])
+                                .collect()
+                                )
+    
+    return res_dict
+  
+  def to_pandas(self):
+    '''
+    to_pandas
+    collect as a pandas dataframe
+
+    Returns
+    -------
+    pandas dataframe
+    '''
+    return self.__data.toPandas()
+  
+  # alias: to_pandas
+  collect = to_pandas
 
   # basic verbs -------------------------------------------------------------
   
@@ -2626,4 +2722,81 @@ class acc_on_pyspark():
                 )
     
     return res
+  
+  def fill_na(self, column_direction_dict, order_by, by = None):
+    '''
+    fill_na (alias: fill)
+    fill missing values from neighboring rows
+
+    Parameters
+    ----------
+    column_direction_dict : dict
+      key is column. value should be one among:
+      "up", "down", "updown", "downup" 
+    order_by : string, tuple or list of tuples
+      order_by specification
+    by : string or list of strings, optional
+      Names of columns to partition by. The default is None.
+
+    Returns
+    -------
+    pyspark dataframe
+
+    '''
+    assert isinstance(column_direction_dict, dict)
+    valid_values = ["up", "down", "updown", "downup"]
+    assert set(column_direction_dict.values()).issubset(valid_values),\
+      f"Values of column_direction_dict should be one among {valid_values}"
+    _ = self._clean_column_names(list(column_direction_dict.keys()))
     
+    # create two windowspec depending on direction
+    order_by = self._clean_order_by(order_by)
+    if by is None:
+      win_down = self._create_windowspec(order_by = order_by,
+                                         rows_between = [-sys.maxsize, 0]
+                                         )
+      win_up   = self._create_windowspec(order_by = order_by,
+                                         rows_between = [0, sys.maxsize]
+                                         )
+    else:
+      by = self._clean_by(by)
+      win_down = self._create_windowspec(order_by = order_by,
+                                         by = by,
+                                         rows_between = [-sys.maxsize, 0]
+                                         )
+      win_up   = self._create_windowspec(order_by = order_by,
+                                         by = by,
+                                         rows_between = [0, sys.maxsize]
+                                         )
+    
+    # first round of filling -- up or down
+    col_expr_dict = dict()
+    for col_name, direction in column_direction_dict.items():
+      if direction in ["down", "downup"]:
+        col_expr_dict[col_name] = F.last(F.col(col_name),
+                                          ignorenulls = True
+                                          ).over(win_down)
+      elif direction in ["up", "updown"]:
+        col_expr_dict[col_name] = F.first(F.col(col_name),
+                                         ignorenulls = True
+                                         ).over(win_up)
+        
+    # 2nd round of filling -- down'up' or up'down' (focus things in quote)
+    col_expr_dict2 = dict()
+    for col_name, direction in column_direction_dict.items():
+      if direction == "updown":
+        col_expr_dict2[col_name] = F.last(F.col(col_name),
+                                           ignorenulls = True
+                                           ).over(win_down)
+      elif direction == "downup":
+        col_expr_dict2[col_name] = F.first(F.col(col_name),
+                                          ignorenulls = True
+                                          ).over(win_up)
+    
+    res = self.__data.withColumns(col_expr_dict)
+    if len(col_expr_dict2) > 0:
+      res = res.withColumns(col_expr_dict2)
+    return res
+  
+  # alias for fill_na
+  fill = fill_na

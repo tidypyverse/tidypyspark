@@ -3,6 +3,16 @@ from tidypyspark.datasets import get_penguins_path
 import tidypyspark.tidypyspark_class as ts
 from tidypyspark._unexported_utils import _is_perfect_sublist
 
+'''
+# for local testing
+import tidypyspark.tidypyspark_class as ts
+from pyspark.sql import SparkSession 
+import pyspark.sql.functions as F 
+spark = SparkSession.builder.getOrCreate()
+import pyspark
+pen = spark.read.csv('src/tidypyspark/data/pen.csv', header = True).drop("_c0")
+'''
+
 @pytest.fixture
 def penguins_data():
     return str(get_penguins_path())
@@ -1396,10 +1406,74 @@ def test_unnest(penguins_data):
   import pyspark
   pen = spark.read.csv(penguins_data, header = True).drop("_c0")
   
+  # unnest check on nested structs
   res  = pen.ts.nest_by(by = ['species', 'island'])
   res2 = res.ts.unnest('data')
   
   assert isinstance(res, pyspark.sql.dataframe.DataFrame)
   assert pen.ts.types == res2.ts.types
+  
+  # unnest check on arrays
+  res = (pen.groupby('species')
+            .agg(F.collect_list('year').alias('year_array'))
+            )
+  res2 = res.ts.unnest('year_array').withColumnRenamed('year_array', 'year')
+  
+  assert isinstance(res2, pyspark.sql.dataframe.DataFrame)
+  assert pen.select('species', 'year').ts.types == res2.ts.types
+  
+  spark.stop()
+  
+def test_fill(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  
+  data = [(None, None, 1, 1), 
+          (1, None, 2, 2), 
+          (1, 1, 1,3), 
+          (2, 2, 2,4), 
+          (2, None, 1,5), 
+          (3, None, 2,6), 
+          (None, 3, 1,7) 
+          ] 
+  df = spark.createDataFrame(data, ["A", "B", "C", "rowid"])
+  
+  # down
+  res = df.ts.fill_na({"A": "down"}, order_by = "rowid").ts.to_list('A')
+  exp = [None, 1,1,2,2,3,3]
+  assert res ==  exp
+  
+  # up
+  res = df.ts.fill_na({"A": "up"}, order_by = "rowid").ts.to_list('A')
+  exp = [1, 1,1,2,2,3,None]
+  assert res ==  exp
+  
+  # updown
+  res = df.ts.fill_na({"A": "updown"}, order_by = "rowid").ts.to_list('A')
+  exp = [1,1,1,2,2,3,3]
+  assert res ==  exp
+  
+  # downup
+  res = df.ts.fill_na({"B": "downup"}, order_by = "rowid").ts.to_list('B')
+  exp = [1,1,1,2,2,2,3]
+  assert res ==  exp
+  
+  # grouped up
+  res = (df.ts.fill_na({"B": "up"}, order_by = "rowid", by = "C")
+           .orderBy('rowid')
+           .ts.to_list('B')
+           )
+  exp = [1,2,1,2,3, None, 3]
+  assert res ==  exp
+  
+  # grouped down
+  res = (df.ts.fill_na({"B": "down"}, order_by = "rowid", by = "C")
+           .orderBy('rowid')
+           .ts.to_list('B')
+           )
+  exp = [None, None, 1,2, 1, 2, 3]
+  assert res ==  exp
   
   spark.stop()
