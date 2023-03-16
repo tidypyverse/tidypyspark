@@ -1477,3 +1477,24 @@ def test_fill(penguins_data):
   assert res ==  exp
   
   spark.stop()
+  
+def test_to(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  
+  res = pen.ts.to_list('species')
+  assert isinstance(res, list)
+  
+  res = pen.ts.pull('species')
+  assert str(res.__class__.__name__) == "Series"
+  
+  res = pen.ts.to_dict()
+  assert isinstance(res, dict)
+  
+  res = pen.ts.to_pandas()
+  assert str(res.__class__.__name__) == "DataFrame"
+  
+  spark.stop()
