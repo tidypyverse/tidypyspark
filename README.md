@@ -73,7 +73,7 @@ nest methods
 - [x] nest
 - [x] unnest
 - [x] unnest_wider
-- [ ] unnest_longer (Sr)
+- [x] unnest_longer
 
 Lower priority things
 ---------------------

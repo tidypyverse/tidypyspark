@@ -1398,6 +1398,25 @@ def test_unnest_wider(penguins_data):
   assert res.ts.types['data_exploded'] == "struct"
   
   spark.stop()
+  
+def test_unnest_longer(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  
+  res = (pen.ts.nest_by(by = ['species', 'island'])
+            .withColumn('data_exploded', F.explode('data'))
+            .drop('data')
+            .ts.unnest_longer('data_exploded')
+            )
+  assert isinstance(res, pyspark.sql.dataframe.DataFrame)
+  assert len(res.columns) == 4
+  expected_colnames = ['species', 'island', 'name', 'value']
+  assert all([x in res.columns for x in expected_colnames])
+  
+  spark.stop()
 
 def test_unnest(penguins_data):
   from pyspark.sql import SparkSession 

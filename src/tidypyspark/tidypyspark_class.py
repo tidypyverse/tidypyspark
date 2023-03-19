@@ -8,6 +8,7 @@ import pyspark.sql.functions as F
 from pyspark.sql.window import Window
 import re
 import sys
+import json
 import numpy as np
 from collections_extended import setlist
 from collections import Counter
@@ -2635,19 +2636,8 @@ class acc_on_pyspark():
     
     return res
   
+  # alias for nest_by
   nest = nest_by
-  
-  @staticmethod
-  def _get_typenames(a_struct):
-    assert isinstance(a_struct, pyspark.sql.types.StructType)
-    types = [x.dataType.typeName() for x in a_struct.fields]
-    return types
-  
-  @staticmethod
-  def _get_names(a_struct):
-    assert isinstance(a_struct, pyspark.sql.types.StructType)
-    names = [x.name for x in a_struct.fields]
-    return names
   
   def unnest_wider(self, colname):
     '''
@@ -2664,14 +2654,23 @@ class acc_on_pyspark():
     pyspark dataframe
     '''
     colname = self._clean_column_names(colname)[0]
-    struct_colname  = self.__data.select(colname).schema
-    typename_column = acc_on_pyspark._get_typenames(struct_colname)[0]
-    assert typename_column == 'struct',\
+    schema  = self.__data.select(colname).schema
+    
+    # is colname column a struct?
+    coltype = [x.dataType.typeName() for x in schema.fields][0]
+    assert coltype == 'struct',\
       "schema of colname column should be of type struct"
-    names_column = acc_on_pyspark._get_names(struct_colname)
+    
+    # get names and types of structFields (columns within struct)
+    json_obj        = json.loads(schema[colname].json())
+    json_obj_simple = json_obj['type']['fields']
+    names_column    = [x['name'] for x in json_obj_simple]
+    
+    # are colnames within struct unique?
     assert _is_unique_list(names_column),\
       "names in colname struct should not be duplicated"
-    rest_columns = list(set(self.columns).difference(colname))
+    rest_columns = list(set(self.colnames).difference(colname))
+    
     assert len(set(names_column).intersection(rest_columns)) == 0,\
       ("unnest_wider results in duplicate column names. "
        "Try renaming columns other than colname")
@@ -2683,7 +2682,86 @@ class acc_on_pyspark():
     
     return res
   
-  # unnest longer is pending and depends on pivot_longer
+  def unnest_longer(self, colname, name = "name", value = "value"):
+    '''
+    unnest_longer
+    creates key and value columns from a struct column
+
+    Parameters
+    ----------
+    colname : str
+      Name of the column of struct type.
+    name: str
+      Name of the resulting key column. Default is 'name'.
+    value: str
+      Name of the resulting value column. Default is 'value'.
+
+    Returns
+    -------
+    pyspark dataframe
+    '''
+    colname = self._clean_column_names(colname)[0]
+    schema  = self.__data.select(colname).schema
+    
+    # is colname column a struct?
+    coltype = [x.dataType.typeName() for x in schema.fields][0]
+    assert coltype == 'struct',\
+      "schema of colname column should be of type struct"
+    
+    # get names and types of structFields (columns within struct)
+    json_obj        = json.loads(schema[colname].json())
+    json_obj_simple = json_obj['type']['fields']
+    names_column    = [x['name'] for x in json_obj_simple]
+    
+    # are colnames within struct unique?
+    assert _is_unique_list(names_column),\
+      "names in colname struct should not be duplicated"
+    
+    # name and value column should not intersect with id columns
+    other_colnames = list(set(self.colnames).difference([colname]))
+    assert isinstance(name, str),\
+      "'name' should be a string"
+    assert isinstance(value, str),\
+      "'value' should be a string"
+    assert not any([x in other_colnames for x in [name, value]]),\
+      "'name' and 'value' should be different from columns other than 'colname'"
+    
+    # rename non struct columns by prepending 'retain_'
+    sel = [x + " as " + ("retain_" + x) for x in other_colnames]
+    rev_sel = [("retain_" + x) + " as " + x for x in other_colnames]
+    retained_colnames = [("retain_" + x) for x in other_colnames]
+    
+    # unpivot str
+    # proto: "stack(2, 'Canada', Canada, 'China', China) as (Country,Total)"
+    col_str = ["'" + x + "'," + x + "," for x in names_column]
+    col_str = "".join(col_str)
+    col_str = col_str[0:-1]
+    
+    unpivot_str = ("stack(" 
+                   + str(len(names_column)) 
+                   + ","
+                   + col_str
+                   + ") as ("
+                   + name + ", " + value + ")"
+                   )
+    
+    res = (self.__data
+               # rename id cols to start with "retain_"
+               # selectExpr is required instead of select
+               .selectExpr(sel + [colname])
+               # expand struct column
+               .select('*', colname + '.*')
+               .drop(colname)
+               # unpivot or pivot longer
+               .select(*retained_colnames, F.expr(unpivot_str))
+               # drop rows where value is null
+               .filter(f'{value} is not null')
+               # rename "retain" columns
+               .selectExpr(rev_sel + [name, value])
+               )
+    
+    return res
+    
   
   def unnest(self, colname):
     '''
@@ -2700,17 +2778,22 @@ class acc_on_pyspark():
     pyspark dataframe
     '''
     colname = self._clean_column_names(colname)[0]
-    struct_colname  = self.__data.select(colname).schema
-    typename_column = acc_on_pyspark._get_typenames(struct_colname)[0]
-    assert typename_column == 'array',\
+    schema  = self.__data.select(colname).schema
+    
+    # is colname column a array?
+    coltype = [x.dataType.typeName() for x in schema.fields][0]
+    assert coltype == 'array',\
       "schema of colname column should be of type array"
     
+    # explode the array column
     res = (self.__data
                .select('*', F.explode_outer(colname).alias("_exploded"))
                .drop(colname)
                .withColumnRenamed("_exploded", colname)
                )
     
+    # if array resolves into a regular column after explode, then we are done.
+    # Else, if it is a struct, widen it
     res_names = res.columns
     res_types = [x.dataType.typeName() for x in res.schema.fields]
     res_dict = dict(zip(res_names, res_types))
