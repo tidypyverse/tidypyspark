@@ -3,15 +3,6 @@ from tidypyspark.datasets import get_penguins_path
 import tidypyspark.tidypyspark_class as ts
 from tidypyspark._unexported_utils import _is_perfect_sublist
 
-'''
-# for local testing
-import tidypyspark.tidypyspark_class as ts
-from pyspark.sql import SparkSession 
-import pyspark.sql.functions as F 
-spark = SparkSession.builder.getOrCreate()
-import pyspark
-pen = spark.read.csv('src/tidypyspark/data/pen.csv', header = True).drop("_c0")
-'''
 
 @pytest.fixture
 def penguins_data():
@@ -1498,3 +1489,14 @@ def test_to(penguins_data):
   assert str(res.__class__.__name__) == "DataFrame"
   
   spark.stop()
+
+
+
+def test_glimpse(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  assert pen.ts.glimpse() == None, "Got error in glimpse"
+
