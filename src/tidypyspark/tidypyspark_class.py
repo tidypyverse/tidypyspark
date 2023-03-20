@@ -29,21 +29,20 @@ from tidypyspark._unexported_utils import (
 # tidypyspark ----
 @register_dataframe_accessor('ts')
 class acc_on_pyspark():
+  '''
   
+  '''
   def __init__(self, data):
     
+    # assign __data attribute
     colnames = list(data.columns)
-    
     assert all([_is_valid_colname(x) for x in colnames]),\
       "column names should not start with underscore"
-    
     assert _is_unique_list(colnames),\
       "column names should be unique"
-    
     self.__data = data
   
   # attributes -------------------------------------------------------------
-  
   @property
   def nrow(self):
     print("Please run: `df.ts.count()` to get the number of rows")
@@ -67,17 +66,25 @@ class acc_on_pyspark():
   
   @property
   def types(self):
+    '''
+    types
+    identify column types as strings
+
+    Returns
+    -------
+    dict with column names as keys, types as a values
+    type is a string.
+    '''
     names = self.__data.columns
     types = [x.dataType.typeName() for x in self.__data.schema.fields]
     res = dict(zip(names, types))
     return res
 
-# cleaners --------------------------------------------------------------
-  
-  def _clean_by(self, by):
+  # cleaners --------------------------------------------------------------
+  def _validate_by(self, by):
     '''
-    _clean_by
-    validates by, cleans 'by' and returns a list of column names
+    _validate_by
+    validates 'by' and returns a list of column names
     
     Parameters
     ----------
@@ -100,10 +107,10 @@ class acc_on_pyspark():
     
     return by
 
-  def _clean_order_by(self, order_by):
+  def _validate_order_by(self, order_by):
     '''
-    _clean_order_by
-    validates order_by, cleans and returns a list of 'column' objects
+    _validate_order_by
+    validates and returns a list of 'column' objects
     
     Parameters
     ----------
@@ -150,8 +157,8 @@ class acc_on_pyspark():
                            ))
         
         assert x[0] in cns,\
-          (f'String input to order_by should be a valid column name. '
-           f'Input: {x[0]}'
+          (f"String input to 'order_by' should be a valid column name. "
+           f"Input: {x[0]}"
            )
           
         if x[1] == 'asc':
@@ -168,7 +175,7 @@ class acc_on_pyspark():
       # 'col_a'
       elif isinstance(x, str):
         assert x in cns,\
-          (f'String input to order_by should be a valid column name. '
+          (f"String input to 'order_by' should be a valid column name. "
            f'Input: {x}'
            )
         order_by[id] = F.col(x).asc_nulls_last()
@@ -179,15 +186,15 @@ class acc_on_pyspark():
       
     return order_by
       
-  def _clean_column_names(self, column_names):
+  def _validate_column_names(self, column_names):
     '''
-    _clean_column_names
-    validates and returns cleaned column names
+    _validate_column_names
+    validates and returns column names
     
     Parameters
     ----------
     column_names : string or list of strings
-      columns names to be cleaned
+      columns names to be validated
 
     Returns
     -------
@@ -208,12 +215,13 @@ class acc_on_pyspark():
   def _extract_order_by_cols(self, order_by):
     '''
     _extract_order_by_cols
-    Extract column names from order_by spec
+    Extract column names from order_by specification
 
     Parameters
     ----------
     order_by : string or tuple or list of tuples
         Order by specification
+        ex: ["col_a", ("col_b", "desc")]
 
     Returns
     -------
@@ -249,8 +257,8 @@ class acc_on_pyspark():
                            ))
         
         assert x[0] in cns,\
-          (f'String input to order_by should be a valid column name. '
-           f'Input: {x[0]}'
+          (f"String input to 'order_by' should be a valid column name. "
+           f"Input: {x[0]}"
            )
         
         out[id] = x[0]
@@ -260,8 +268,8 @@ class acc_on_pyspark():
       # 'col_a'
       elif isinstance(x, str):
         assert x in cns,\
-          (f'String input to order_by should be a valid column name. '
-           f'Input: {x}'
+          (f"String input to 'order_by' should be a valid column name. "
+           f"Input: {x}"
            )
         out[id] = x
       
@@ -329,7 +337,7 @@ class acc_on_pyspark():
 
     Returns
     -------
-    res : pyspark dataframe
+    pyspark dataframe
     
     Examples
     --------
@@ -343,16 +351,20 @@ class acc_on_pyspark():
         )
     
     '''
-    order_by = self._clean_order_by(order_by)
-    
+    order_by = self._validate_order_by(order_by)
+    assert name not in self.colnames,\
+      f"{name} should not be an existing column name"
     if by is not None:
-      by = self._clean_by(by)
+      by = self._validate_by(by)
       win = self._create_windowspec(by = by, order_by = order_by)
     else:
       win = self._create_windowspec(order_by = order_by)
     
     res = self.__data.withColumn(name, F.row_number().over(win))
     return res
+  
+  # alias
+  rowid_to_column = add_row_number
   
   def add_group_number(self, by, name = "group_number"):
     '''
@@ -382,15 +394,15 @@ class acc_on_pyspark():
         .show(10)
         )
     '''
-    by = self._clean_by(by)
+    assert name not in self.colnames,\
+      f"{name} should not be an existing column name"
+    by = self._validate_by(by)
     win = self._create_windowspec(order_by = by)
-    groups_numbered = (
-      self.__data
-          .select(by)
-          .dropDuplicates()
-          .withColumn(name, F.row_number().over(win))
-          )
-    
+    groups_numbered = (self.__data
+                           .select(by)
+                           .dropDuplicates()
+                           .withColumn(name, F.row_number().over(win))
+                           )
     res = self.__data.join(groups_numbered, how = "inner", on = by)       
     return res
   
@@ -402,14 +414,14 @@ class acc_on_pyspark():
     Parameters
     ----------
     column_name : str
-      Name of the column to be colected.
+      Name of the column to be collected.
 
     Returns
     -------
     list
     '''
     assert isinstance(column_name, str)
-    column_name = self._clean_column_names(column_name)
+    column_name = self._validate_column_names(column_name)[0]
     res = (self.__data
                .select(column_name)
                .rdd.map(lambda x: x[0])
@@ -425,14 +437,14 @@ class acc_on_pyspark():
     Parameters
     ----------
     column_name : str
-      Name of the column to be colected.
+      Name of the column to be collected.
 
     Returns
     -------
     pandas series
     '''
     assert isinstance(column_name, str)
-    column_name = self._clean_column_names(column_name)
+    column_name = self._validate_column_names(column_name)[0]
     res = (self.__data
                .select(column_name)
                .rdd.map(lambda x: x[0])
@@ -467,7 +479,6 @@ class acc_on_pyspark():
                                 .rdd.map(lambda x: x[0])
                                 .collect()
                                 )
-    
     return res_dict
   
   def to_pandas(self):
@@ -509,12 +520,12 @@ class acc_on_pyspark():
     pen.ts.select(['species', 'island']).show(10)
     pen.ts.select(['species', 'island'], include = False).show(10)
     '''
-    cn = self._clean_column_names(column_names)
+    cn = self._validate_column_names(column_names)
     
     if not include:
       cn = list(set(self.colnames).difference(cn))
       if len(cn) == 0:
-        raise Exception("Atleast one column should be selected in 'select'")
+        raise Exception("Atleast one column should be selected")
         
     res = self.__data.select(*cn)
     return res
@@ -535,14 +546,15 @@ class acc_on_pyspark():
     
     Notes
     -----
-    1. 'arrange' is not memory efficient as it brings all data to a single executor
+    1. 'arrange' is not memory efficient as it brings all data
+       to a single executor.
     
     Examples
     --------
     pen.ts.arrange('bill_depth_mm').show(10)
     pen.ts.arrange(['bill_depth_mm', ('bill_length_mm', 'desc')]).show(10)
     '''
-    order_by = self._clean_order_by(order_by)
+    order_by = self._validate_order_by(order_by)
     warnings.warn(
         "1. 'arrange' is not memory efficient as it brings all data "
          "to a single executor"
@@ -579,12 +591,12 @@ class acc_on_pyspark():
     if column_names is None:
       column_names = self.colnames
     
-    cn = self._clean_column_names(column_names)
+    cn = self._validate_column_names(column_names)
     
     if order_by is None:
       res = self.__data.dropDuplicates(cn)
     else:
-      order_by = self._clean_order_by(order_by)
+      order_by = self._validate_order_by(order_by)
       win = self._create_windowspec(order_by = order_by)
       rank_colname = _generate_new_string(self.colnames)
       
@@ -602,7 +614,7 @@ class acc_on_pyspark():
   def rename(self, old_new_dict):
     '''
     rename
-    Rename columns of the pyspark dataframe
+    Rename columns
 
     Parameters
     ----------
@@ -622,27 +634,28 @@ class acc_on_pyspark():
     '''
     cn = self.colnames
 
-    if (old_new_dict is None):
-      raise Exception("provide  atleast one column to change")
-
     assert isinstance(old_new_dict, dict), \
       "arg 'old_new_dict' should be a dict"
+    assert len(old_new_dict) > 0, \
+      "There should alteast one element in old_new_dict"
+    
+    new_column_names = list(old_new_dict.values())
+    
     assert set(cn).issuperset(old_new_dict.keys()), \
-      "keys of the input dict should be existing column names"
-    assert _is_string_or_string_list(list(old_new_dict.values())), \
-      "values of the dict should be strings"
-    assert _is_unique_list(list(old_new_dict.values())), \
-      "values of the dict should be unique"
-    assert len(old_new_dict)>0, \
-        "there should alteast one element in old_new_dict"
-
+      "Keys of the input dict should be existing column names"
+    assert _is_unique_list(new_column_names), \
+      "Values of the dict should be unique"
+    assert all([_is_valid_colname(x) for x in new_column_names]),\
+      "Atleast one value of the dict is not a valid column name"
+    
     # new names should not intersect with 'remaining' names
     remaining = set(cn).difference(old_new_dict.keys())
     assert len(remaining.intersection(old_new_dict.values())) == 0, \
-      ("New intended column names (values of the dict) lead to duplicate "
-       "column names"
+      ("New intended column names (values of the dict) should not lead to "     
+       "duplicate column names"
        )
-    select_col_with_alias = [F.col(c).alias(old_new_dict.get(c, c)) for c in self.colnames]
+    select_col_with_alias = ([F.col(c).alias(old_new_dict.get(c, c))
+                             for c in self.colnames])
     res = self.__data.select(select_col_with_alias)
     return res
 
@@ -652,13 +665,15 @@ class acc_on_pyspark():
     Relocate the columns
 
     Parameters
-  ----------
+    ----------
     column_names : string or a list of strings
-    column names to be moved
+      column names to be moved
     before : string, optional
-    column before which the column are to be moved. The default is None.
+      column before which the column_names are to be moved.
+      The default is None.
     after : string, optional
-    column after which the column are to be moved. The default is None.
+      column after which the column_names are to be moved.
+      The default is None.
 
     Returns
     -------
@@ -681,30 +696,30 @@ class acc_on_pyspark():
     pen.ts.relocate(["island", "species"], after = "year")
     '''
 
-    column_names = self._clean_column_names(column_names)
+    column_names = self._validate_column_names(column_names)
     cn = self.colnames
 
     cn = self.colnames
     col_not_relocate = [i for i in cn if i not in column_names]
 
     assert not ((before is not None) and (after is not None)), \
-    "Atleast one arg among 'before' and 'after' should be None"
+      "Atleast one arg among 'before' and 'after' should be None"
 
     if after is not None:
       assert isinstance(after, str), \
-          "arg 'after' should be a string"
+        "arg 'after' should be a string"
       assert after in cn, \
-          "arg 'after' should be a exisiting column name"
+        "arg 'after' should be a exisiting column name"
       assert not (after in column_names), \
-          "arg 'after' should be an element of 'column_names'"
+        "arg 'after' should be an element of 'column_names'"
 
     if before is not None:
       assert isinstance(before, str), \
-          "arg 'before' should be a string"
+        "arg 'before' should be a string"
       assert before in cn, \
-          "arg 'before' should be a exisiting column name"
+        "arg 'before' should be a exisiting column name"
       assert not (before in column_names), \
-          "arg 'before' should be an element of 'column_names'"
+        "arg 'before' should be an element of 'column_names'"
 
     # case 1: relocate to start when both before and after are None
     if (before is None) and (after is None):
@@ -765,6 +780,8 @@ class acc_on_pyspark():
         )
     
     '''
+    assert all([_is_valid_colname(x) for x in dictionary.keys()]),\
+      "Atleast one key of the dictionary is not a valid column name"
     res = self.__data
   
     with_win = False
@@ -772,7 +789,7 @@ class acc_on_pyspark():
     if window_spec is not None:
       with_win = True
       assert isinstance(window_spec, pyspark.sql.window.WindowSpec),\
-        ("'window_spec' should be an instance of"
+        ("'window_spec' should be an instance of "
          "'pyspark.sql.window.WindowSpec' class"
          )
       if len(kwargs) >= 1:
@@ -782,6 +799,11 @@ class acc_on_pyspark():
     else:
       # create windowspec if required
       if len(kwargs) >= 1:
+        for akwarg_name, akwarg_value in kwargs.items():
+          if akwarg_name == "by":
+            kwargs[akwarg_name] = self._validate_by(akwarg_name)
+          if akwarg_name == "order_by":
+            kwargs[akwarg_name] = self._validate_order_by(akwarg_name)
         win = self._create_windowspec(**kwargs)
         with_win = True
     
@@ -797,7 +819,7 @@ class acc_on_pyspark():
   def summarise(self, dictionary, by = None):
     '''
     summarise
-    Create aggreagate columns
+    Create aggregate columns
 
     Parameters
     ----------
@@ -831,20 +853,21 @@ class acc_on_pyspark():
         .show(10)
         )
     '''
-    
+    assert all([_is_valid_colname(x) for x in dictionary.keys()]),\
+      "Atleast one key of the dictionary is not a valid column name"
     agg_list = [tup[1].alias(tup[0]) for tup in dictionary.items()]
     
     if by is None:
       res = self.__data.agg(*agg_list)
     else:
-      by = self._clean_by(by)
+      by = self._validate_by(by)
       res = self.__data.groupBy(*by).agg(*agg_list)
     
     return res
   
   summarize = summarise
   
-  def filter(condition):
+  def filter(self, condition):
     '''
     filter
     subset rows using some condition
@@ -860,7 +883,7 @@ class acc_on_pyspark():
     '''
     return self.__data.filter(condition)
     
-  # join methods --------------------------------------------------------------
+  # join methods ------------------------------------------------------------
   def _validate_join(self, pyspark_df, on, on_x, on_y , sql_on, suffix, how):
       
     assert isinstance(pyspark_df, pyspark.sql.dataframe.DataFrame),\
@@ -1823,7 +1846,7 @@ class acc_on_pyspark():
     pen.ts.count('species', name = 'cnt').show()
     pen.ts.count('species', wt = 'body_mass_g').show()
     '''
-    cn = self._clean_column_names(column_names)
+    cn = self._validate_column_names(column_names)
     
     assert isinstance(name, str),\
       "'name' should be a string"
@@ -1879,7 +1902,7 @@ class acc_on_pyspark():
     pen.ts.add_count('species', name = 'cnt').show()
     pen.ts.add_count('species', wt = 'body_mass_g').show()
     '''
-    cn = self._clean_column_names(column_names)
+    cn = self._validate_column_names(column_names)
     
     assert isinstance(name, str),\
       "'name' should be a string"
@@ -1994,14 +2017,14 @@ class acc_on_pyspark():
     
     assert isinstance(n, int) and n > 0,\
       "n should be a positive integer"
-    order_by_spec = self._clean_order_by((order_by_column, 'asc'))
+    order_by_spec = self._validate_order_by((order_by_column, 'asc'))
     assert isinstance(with_ties, bool)
     
     # create windowspec
     if by is None:
       win = self._create_windowspec(order_by = order_by_spec)
     else:
-      by = self._clean_by(by)
+      by = self._validate_by(by)
       win = self._create_windowspec(order_by = order_by_spec, by = by)
     
     # decide on ranking function
@@ -2059,14 +2082,14 @@ class acc_on_pyspark():
     '''
     assert isinstance(n, int) and n > 0,\
       "n should be a positive integer"
-    order_by_spec = self._clean_order_by((order_by_column, 'desc'))
+    order_by_spec = self._validate_order_by((order_by_column, 'desc'))
     assert isinstance(with_ties, bool)
     
     # create windowspec
     if by is None:
       win = self._create_windowspec(order_by = order_by_spec)
     else:
-      by = self._clean_by(by)
+      by = self._validate_by(by)
       win = self._create_windowspec(order_by = order_by_spec, by = by)
     
     # decide on ranking function
@@ -2285,8 +2308,8 @@ class acc_on_pyspark():
     
     cn = self.colnames
     
-    names_from = self._clean_column_names(names_from)
-    values_from = self._clean_column_names(values_from)
+    names_from = self._validate_column_names(names_from)
+    values_from = self._validate_column_names(values_from)
 
     assert len(set(values_from).intersection(names_from)) == 0,\
         ("arg 'names_from' and 'values_from' should not "
@@ -2305,7 +2328,7 @@ class acc_on_pyspark():
         else:
             print("'id_cols' chosen: " + str(id_cols))
     else:
-        id_cols = self._clean_column_names(id_cols)
+        id_cols = self._validate_column_names(id_cols)
         assert len(set(id_cols).intersection(names_values_from)) == 0,\
             ("arg 'id_cols' should not have common names with either "
             "'names_from' or 'values_from'"
@@ -2454,7 +2477,7 @@ class acc_on_pyspark():
     '''
     # assertions
     cn = self.colnames
-    cols = self._clean_column_names(cols)
+    cols = self._validate_column_names(cols)
 
     assert isinstance(include, bool),\
         "arg 'include' should be a bool"
@@ -2622,7 +2645,7 @@ class acc_on_pyspark():
     -------
     res : pyspark dataframe
     '''
-    by = self._clean_by(by)
+    by = self._validate_by(by)
     other_cols_list = list(set(self.colnames).difference(by))
     assert isinstance(name, str),\
       "name should be a string"
@@ -2653,7 +2676,7 @@ class acc_on_pyspark():
     -------
     pyspark dataframe
     '''
-    colname = self._clean_column_names(colname)[0]
+    colname = self._validate_column_names(colname)[0]
     schema  = self.__data.select(colname).schema
     
     # is colname column a struct?
@@ -2700,7 +2723,7 @@ class acc_on_pyspark():
     -------
     pyspark dataframe
     '''
-    colname = self._clean_column_names(colname)[0]
+    colname = self._validate_column_names(colname)[0]
     schema  = self.__data.select(colname).schema
     
     # is colname column a struct?
@@ -2777,7 +2800,7 @@ class acc_on_pyspark():
     -------
     pyspark dataframe
     '''
-    colname = self._clean_column_names(colname)[0]
+    colname = self._validate_column_names(colname)[0]
     schema  = self.__data.select(colname).schema
     
     # is colname column a array?
@@ -2829,10 +2852,10 @@ class acc_on_pyspark():
     valid_values = ["up", "down", "updown", "downup"]
     assert set(column_direction_dict.values()).issubset(valid_values),\
       f"Values of column_direction_dict should be one among {valid_values}"
-    _ = self._clean_column_names(list(column_direction_dict.keys()))
+    _ = self._validate_column_names(list(column_direction_dict.keys()))
     
     # create two windowspec depending on direction
-    order_by = self._clean_order_by(order_by)
+    order_by = self._validate_order_by(order_by)
     if by is None:
       win_down = self._create_windowspec(order_by = order_by,
                                          rows_between = [-sys.maxsize, 0]
@@ -2841,7 +2864,7 @@ class acc_on_pyspark():
                                          rows_between = [0, sys.maxsize]
                                          )
     else:
-      by = self._clean_by(by)
+      by = self._validate_by(by)
       win_down = self._create_windowspec(order_by = order_by,
                                          by = by,
                                          rows_between = [-sys.maxsize, 0]
