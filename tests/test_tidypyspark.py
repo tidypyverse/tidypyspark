@@ -1517,3 +1517,131 @@ def test_to(penguins_data):
   assert str(res.__class__.__name__) == "DataFrame"
   
   spark.stop()
+
+def test_drop_na():
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  
+  from pyspark.sql.functions import col
+
+  # create a DataFrame with null values
+  data = [("Alice", 25, None), ("Bob", None, 80), (None, 30, 90)]
+  df = spark.createDataFrame(data, ["name", "age", "score"])
+
+  # drop rows with null values
+  df1 = df.ts.drop_na()
+  # Output
+  # +----+---+-----+
+  # |name|age|score|
+  # +----+---+-----+
+  # +----+---+-----+
+  assert df1.count() == 0
+
+  # drop rows with null values in a specific column
+  df2 = df.ts.drop_na(subset = ["age"])
+  # Output
+  # +-----+---+-----+
+  # | name|age|score|
+  # +-----+---+-----+
+  # |Alice| 25| null|
+  # | null| 30|   90|
+  # +-----+---+-----+
+  assert df2.count() == 2
+
+  # drop rows with null values if all values are null.
+  df3 = df.ts.drop_na(how = "all")
+  # Output
+  # +-----+----+-----+
+  # | name| age|score|
+  # +-----+----+-----+
+  # |Alice|  25| null|
+  # |  Bob|null|   80|
+  # | null|  30|   90|
+  # +-----+----+-----+
+  assert df3.count() == 3
+
+  # drop rows with less than 3 non-null values
+  df4 = df.ts.drop_na(thresh=3)
+  # Output
+  # +----+---+-----+
+  # |name|age|score|
+  # +----+---+-----+
+  # +----+---+-----+
+  assert df4.count() == 0
+  
+  spark.stop()
+
+def test_replace_na():
+
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+
+  # create a DataFrame with null values
+  data = [("Alice", 25, None, [20, 30, 40]), 
+          ("Bob", None, 80, [10, 20, 30]), 
+          (None, 30, 90 , None)
+          ]
+  df = spark.createDataFrame(data, ["name", "age", "score", "marks"])
+  # +-----+----+-----+------------+
+  # | name| age|score|       marks|
+  # +-----+----+-----+------------+
+  # |Alice|  25| null|[20, 30, 40]|
+  # |  Bob|null|   80|[10, 20, 30]|
+  # | null|  30|   90|        null|
+  # +-----+----+-----+------------+
+
+  # replace null values with a scalar value
+  df1 = df.ts.replace_na(0)
+  # Output
+  # +-----+---+-----+------------+
+  # | name|age|score|       marks|
+  # +-----+---+-----+------------+
+  # |Alice| 25|    0|[20, 30, 40]|
+  # |  Bob|  0|   80|[10, 20, 30]|
+  # | null| 30|   90|        null|
+  # +-----+---+-----+------------+
+  assert df1.select("age").collect()[1][0] == 0
+  assert df1.select("score").collect()[0][0] == 0
+
+  # replace null values with a dictionary of column names and values
+  df2 = df.ts.replace_na({"name": "A", "score": 25, "marks": []})
+  # Output
+  # +-----+----+-----+------------+
+  # | name| age|score|       marks|
+  # +-----+----+-----+------------+
+  # |Alice|  25|   25|[20, 30, 40]|
+  # |  Bob|null|   80|[10, 20, 30]|
+  # |    A|  30|   90|          []|
+  # +-----+----+-----+------------+
+  assert df2.select("name").collect()[2][0] == "A"
+  assert df2.select("marks").collect()[2][0] == []
+
+  # replace null values in a specific column. Note we have used an empty list in the dictionary for column "marks"
+  df3 = df.ts.replace_na({"age": True, "marks": []}, subset=["age", "score", "marks"])
+  # +-----+---+-----+------------+
+  # | name|age|score|       marks|
+  # +-----+---+-----+------------+
+  # |Alice| 25| null|[20, 30, 40]|
+  # |  Bob|  1|   80|[10, 20, 30]|
+  # | null| 30|   90|          []|
+  # +-----+---+-----+------------+
+  assert df3.select("age").collect()[1][0] == 1
+  assert df3.select("marks").collect()[2][0] == []
+
+  # replace null values in all columns with an empty list. 
+  # This replaces null values in all columns of type array<> with an empty list
+  df4 = df.ts.replace_na([], subset = None)
+  # +-----+----+-----+------------+
+  # | name| age|score|       marks|
+  # +-----+----+-----+------------+
+  # |Alice|  25| null|[20, 30, 40]|
+  # |  Bob|null|   80|[10, 20, 30]|
+  # | null|  30|   90|          []|
+  # +-----+----+-----+------------+
+  assert df4.select("marks").collect()[2][0] == []
+
+  spark.stop()
