@@ -72,29 +72,21 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <p><a class="reference external" href="https://badge.fury.io/py/tidypyspark"><img alt="PyPIversion" src="https://badge.fury.io/py/tidypyspark.svg" /></a></p>
+  <p><a class="reference external" href="https://badge.fury.io/py/tidypyspark"><img alt="PyPI version" src="https://badge.fury.io/py/tidypyspark.svg" /></a></p>
 <section id="tidypyspark">
 <h1><code class="docutils literal notranslate"><span class="pre">tidypyspark</span></code><a class="headerlink" href="#tidypyspark" title="Permalink to this heading"></a></h1>
 <blockquote>
-<div><p>Make <a class="reference external" href="https://pypi.org/project/pyspark/">pyspark</a> sing
-<a class="reference external" href="https://dplyr.tidyverse.org/">dplyr</a></p>
+<div><p>Make <a class="reference external" href="https://pypi.org/project/pyspark/">pyspark</a> sing <a class="reference external" href="https://dplyr.tidyverse.org/">dplyr</a></p>
 </div></blockquote>
 <blockquote>
-<div><p>Inspired by <a class="reference external" href="https://spark.rstudio.com/">sparklyr</a>,
-<a class="reference external" href="https://tidyverse.tidyverse.org/">tidyverse</a></p>
+<div><p>Inspired by <a class="reference external" href="https://spark.rstudio.com/">sparklyr</a>, <a class="reference external" href="https://tidyverse.tidyverse.org/">tidyverse</a></p>
 </div></blockquote>
-<p><code class="docutils literal notranslate"><span class="pre">tidypyspark</span></code> python package provides <em>minimal, pythonic</em> wrapper around
-pyspark sql dataframe API in
-<a class="reference external" href="https://tidyverse.tidyverse.org/">tidyverse</a> flavor.</p>
+<p><code class="docutils literal notranslate"><span class="pre">tidypyspark</span></code> python package provides <em>minimal, pythonic</em> wrapper around pyspark sql dataframe API in <a class="reference external" href="https://tidyverse.tidyverse.org/">tidyverse</a> flavor.</p>
 <ul class="simple">
-<li><p>With accessor <code class="docutils literal notranslate"><span class="pre">ts</span></code>, apply <code class="docutils literal notranslate"><span class="pre">tidypyspark</span></code> methods where both input and
-output are mostly pyspark dataframes.</p></li>
+<li><p>With accessor <code class="docutils literal notranslate"><span class="pre">ts</span></code>, apply <code class="docutils literal notranslate"><span class="pre">tidypyspark</span></code> methods where both input and output are mostly pyspark dataframes.</p></li>
 <li><p>Consistent ‘verbs’ (<code class="docutils literal notranslate"><span class="pre">select</span></code>, <code class="docutils literal notranslate"><span class="pre">arrange</span></code>, <code class="docutils literal notranslate"><span class="pre">distinct</span></code>, …)</p></li>
 </ul>
-<p>Also see <a class="reference external" href="https://pypi.org/project/tidypandas/"><code class="docutils literal notranslate"><span class="pre">tidypandas</span></code></a>: A
-<strong>grammar of data manipulation</strong> for
-<a class="reference external" href="https://pandas.pydata.org/docs/index.html">pandas</a> inspired by
-<a class="reference external" href="https://tidyverse.tidyverse.org/">tidyverse</a></p>
+<p>Also see <a class="reference external" href="https://pypi.org/project/tidypandas/"><code class="docutils literal notranslate"><span class="pre">tidypandas</span></code></a>: A <strong>grammar of data manipulation</strong> for <a class="reference external" href="https://pandas.pydata.org/docs/index.html">pandas</a> inspired by <a class="reference external" href="https://tidyverse.tidyverse.org/">tidyverse</a></p>
 <section id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h2>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span># assumed that pyspark session is active
@@ -113,15 +105,15 @@ pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
     .ts.select([&#39;species&#39;, &#39;bill_length_mm&#39;, &#39;cumsum_bl&#39;])
     ).show(5)
     
-+--------------+-------+-------------+------------------+
-|bill_length_mm|species|bill_depth_mm|         cumsum_bl|
-+--------------+-------+-------------+------------------+
-|          32.1| Adelie|         15.5|              32.1|
-|          35.2| Adelie|         15.9| 67.30000000000001|
-|          37.7| Adelie|           16|105.00000000000001|
-|          36.2| Adelie|         16.1|141.20000000000002|
-|          33.1| Adelie|         16.1|             174.3|
-+--------------+-------+-------------+------------------+
++-------+--------------+------------------+
+|species|bill_length_mm|         cumsum_bl|
++-------+--------------+------------------+
+| Adelie|          32.1|              32.1|
+| Adelie|          35.2| 67.30000000000001|
+| Adelie|          37.7|105.00000000000001|
+| Adelie|          36.2|141.20000000000002|
+| Adelie|          33.1|             174.3|
++-------+--------------+------------------+
 </pre></div>
 </div>
 </section>
@@ -160,8 +152,7 @@ pen.select(&#39;species&#39;, F.expr(stack_expr)).show(5)
 </pre></div>
 </div>
 <blockquote>
-<div><p><code class="docutils literal notranslate"><span class="pre">tidypyspark</span></code> relies on the amazing <code class="docutils literal notranslate"><span class="pre">pyspark</span></code> library and spark
-ecosystem.</p>
+<div><p><code class="docutils literal notranslate"><span class="pre">tidypyspark</span></code> relies on the amazing <code class="docutils literal notranslate"><span class="pre">pyspark</span></code> library and spark ecosystem.</p>
 </div></blockquote>
 </section>
 <section id="installation">
@@ -170,6 +161,7 @@ ecosystem.</p>
 <ul class="simple">
 <li><p>On github: <a class="reference external" href="https://github.com/talegari/tidypyspark">https://github.com/talegari/tidypyspark</a></p></li>
 <li><p>On pypi: <a class="reference external" href="https://pypi.org/project/tidypyspark">https://pypi.org/project/tidypyspark</a></p></li>
+<li><p>website: <a class="reference external" href="https://talegari.github.io/tidypyspark/">https://talegari.github.io/tidypyspark/</a></p></li>
 </ul>
 <div class="toctree-wrapper compound">
 </div>
