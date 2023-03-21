@@ -321,6 +321,91 @@ class acc_on_pyspark():
     return win
   
   # utils -------------------------------------------------------------------
+
+  def glimpse(self, n_rows=100, n_columns = 100):
+    '''
+    glimpse
+
+    This function prints the first 100(default) rows of the dataset, along with the number of rows 
+    and columns in the dataset and the data types of each column. It also displays the values 
+    of each column, limited to the first 100(default) values. If the number of rows exceeds 100, then 
+    the values are truncated accordingly.
+
+    Parameters
+    ----------
+    n_columns : maximum number of columns to be handled
+    n_rows: maximum number of rows to show
+
+    Returns
+    -------
+    None
+
+    Examples
+    --------
+    pen.ts.glimpse()
+
+    species           <string> Adelie, Adelie, Adelie, Adelie, Adelie, Adelie, Ad...
+    island            <string> Torgersen, Torgersen, Torgersen, Torgersen, Torger...
+    bill_length_mm    <string> 39.1, 39.5, 40.3, None, 36.7, 39.3, 38.9, 39.2, 34...
+    bill_depth_mm     <string> 18.7, 17.4, 18.0, None, 19.3, 20.6, 17.8, 19.6, 18...
+    flipper_length_mm <string> 181.0, 186.0, 195.0, None, 193.0, 190.0, 181.0, 19...
+    body_mass_g       <string> 3750.0, 3800.0, 3250.0, None, 3450.0, 3650.0, 3625...
+    sex               <string> male, female, female, None, female, male, female, ...
+    year              <string> 2007, 2007, 2007, 2007, 2007, 2007, 2007, 2007, 20...
+    '''
+    from shutil import get_terminal_size
+    w, h = get_terminal_size()
+
+    # get row and column count
+    ncol = len(self.__data.columns)
+
+    res = [f'Columns: {ncol}']
+
+    col_strs = []
+    names = []
+    n_ljust = 0
+    dtypes = []
+    t_ljust = 0
+    values = []
+
+    # Input validation
+    assert isinstance(n_rows, int) and n_rows > 0, "n_rows must be a positive integer"
+    assert isinstance(n_columns, int) and n_columns > 0, "n_columns must be a positive integer"
+
+    #get dtypes for all columns
+    data_temp = self.__data.limit(n_rows).toPandas()
+    all_dtypes = self.types
+
+    for acol in self.colnames[0:n_columns]:
+        names.append(acol)
+        n_ljust = max(n_ljust, len(names[-1]))
+        dtypes.append(f'<{all_dtypes[acol]}>')
+        t_ljust = max(t_ljust, len(dtypes[-1]))
+
+    #get values for float and non float columns
+    float_vals_precision = 2
+    for name, dtype in zip(names, dtypes):
+        vals = data_temp.loc[0:n_rows, name]
+        if dtype[1:6] == "float":
+            vals = vals.round(float_vals_precision)
+        val_str = ", ".join(list(map(str, vals)))
+
+        if len(val_str) > w-2-n_ljust-t_ljust:
+            val_str = val_str[0:(w-2-n_ljust-t_ljust)-3] + "..."
+        res_str = f'{name.ljust(n_ljust)} {dtype.ljust(t_ljust)} {val_str}'
+        res.append(res_str)
+
+    # print additional columnnames/count in case it is more then n_rows
+    if ncol > n_columns:
+        footer = f'\nmore columns: {", ".join(self.colnames[n_columns:(n_columns+50)])}'
+        if ncol >= n_columns+50:
+            footer += "..."
+
+        res.append(footer)
+    print("\n".join(res))
+    return None
+  
+
   def add_row_number(self, order_by, name = "row_number", by = None):
     '''
     add_row_number
