@@ -1201,14 +1201,18 @@ class acc_on_pyspark():
     # Format - [('LH', 'dept'), ('LHS', 'dept'), ('RHS', 'age')]
     column_names_tuple_list = re.findall(pattern, sql_on)
 
-    # Generates a dictionary with LHS and RHS as keys and
-    # column names as values.
+    # Filtering tuples having only LHS or RHS as the first element of the tuple
+    filtered_tuples = ([(key, value) 
+                        for (key, value) in column_names_tuple_list 
+                        if key=='LHS' or key=='RHS']
+                      )
+
+    # Generates a dictionary with LHS and RHS as keys and column names as values.
     # e.g. {'RHS': ['id2', 'dept', 'age'], 'LHS': ['dept']}
-    dict_from_tuple = dict()
-    for tup in column_names_tuple_list.items():
-      if key=='LHS' or key=='RHS':
-        dict_from_tuple[tup[0]] = tup[1]
-    
+    dict_from_tuple = {key:[] for (key, _) in filtered_tuples}
+    for tpl in filtered_tuples:
+        dict_from_tuple[tpl[0]].append(tpl[1])
+
     return dict_from_tuple
   
   def _get_spark_df_by_removing_suffix(self, suffix, cols_LHS, cols_RHS, res):
@@ -3213,9 +3217,9 @@ class acc_on_pyspark():
       "thresh should be an integer if specified"
     
     if column_names is not None:
-      column_names = self._clean_column_names(column_names)
+      column_names = self._validate_column_names(column_names)
 
-    return self.__data.dropna(column_names = column_names,
+    return self.__data.dropna(subset = column_names,
                               how = how,
                               thresh = thresh,
                               )
@@ -3232,8 +3236,10 @@ class acc_on_pyspark():
     value: dict or a scalar or an empty list
           When a dict, key should be a column name and value should be the
           value to replace by missing values of the column
-          When a scalar or an empty list, missing values of all columns will be replaced with
-          value. A scalar value could be a string, a numeric value(int, float), or a boolean value.
+          When a scalar or an empty list, 
+          missing values of all columns will be replaced with value. 
+          A scalar value could be a string, a numeric value(int, float), 
+          or a boolean value.
 
     Returns
     -------
@@ -3260,17 +3266,6 @@ class acc_on_pyspark():
     # | null|  30|   90|        null|
     # +-----+----+-----+------------+
 
-    # replace null values with a scalar value
-    df1 = df.ts.replace_na(0)
-    # Output
-    # +-----+---+-----+------------+
-    # | name|age|score|       marks|
-    # +-----+---+-----+------------+
-    # |Alice| 25|    0|[20, 30, 40]|
-    # |  Bob|  0|   80|[10, 20, 30]|
-    # | null| 30|   90|        null|
-    # +-----+---+-----+------------+
-
     # replace null values with a dictionary of column names and values
     df2 = df.ts.replace_na({"name": "A", "score": 25, "marks": []})
     # Output
@@ -3281,27 +3276,8 @@ class acc_on_pyspark():
     # |  Bob|null|   80|[10, 20, 30]|
     # |    A|  30|   90|          []|
     # +-----+----+-----+------------+
-
-    # replace null values in a specific column. Note we have used an empty list in the dictionary for column "marks"
-    df3 = df.ts.replace_na({"age": True, "marks": []}, subset=["age", "score", "marks"])
-    # +-----+---+-----+------------+
-    # | name|age|score|       marks|
-    # +-----+---+-----+------------+
-    # |Alice| 25| null|[20, 30, 40]|
-    # |  Bob|  1|   80|[10, 20, 30]|
-    # | null| 30|   90|          []|
-    # +-----+---+-----+------------+
-
-    # replace null values in all columns with an empty list. 
-    # This replaces null values in all columns of type array<> with an empty list
-    df4 = df.ts.replace_na([], subset = None)
-    # +-----+----+-----+------------+
-    # | name| age|score|       marks|
-    # +-----+----+-----+------------+
-    # |Alice|  25| null|[20, 30, 40]|
-    # |  Bob|null|   80|[10, 20, 30]|
-    # | null|  30|   90|          []|
-    # +-----+----+-----+------------+
+    assert df2.select("name").collect()[2][0] == "A"
+    assert df2.select("marks").collect()[2][0] == []
 
     '''
 
@@ -3323,7 +3299,8 @@ class acc_on_pyspark():
         # If the value is a list, then it should be an empty list.
         if isinstance(value, list):
           
-          # If the value is an empty list, then replace null values with an empty array.
+          # If the value is an empty list, then replace null values 
+          # with an empty array.
           df = df.withColumn(col_name, 
                              F.when(F.col(col_name).isNull(), F.array()
                                    ).otherwise(F.col(col_name))
@@ -3347,31 +3324,41 @@ class acc_on_pyspark():
     datatype_dict = _get_compatible_datatypes_of_python_and_spark()
     
     if isinstance(value, dict):
-      _ = self._clean_column_names(list(value.keys()))
+      _ = self._validate_column_names(list(value.keys()))
     
       for col_name, col_value in value.items():
         col_dtype = type(col_value).__name__
         assert df_dtypes[col_name] in datatype_dict[col_dtype],\
-          f"replacement value for column '{col_name}' should be of type {df_dtypes[col_name]}"
+          (f"replacement value for column '{col_name}' " 
+            f"should be of type '{df_dtypes[col_name]}' "
+          )
       
         if isinstance(col_value, list):
           assert len(col_value) == 0,\
-        "replacement value should be an empty list if a list is passed as a value"
+        ("replacement value should be an empty list if a "
+         "list is passed as a value"
+        )
 
     elif isinstance(value, list):
       assert len(value) == 0,\
-    "replacement value should be an empty list if a list is passed as a value"
+      ("replacement value should be an empty list "
+       "if a list is passed as a value"
+      )
 
       # Check if all the columns are of type array.
       for col in df.columns:
         assert df_dtypes[col] == "array",\
-        f"replacement value should be an empty list if a list is passed as a value"
+        ("replacement value should be an empty list "
+         "if a list is passed as a value"
+        )
 
     elif np.isscalar(value):
       value_dtype = type(value).__name__
       for col in df.columns:
         assert df_dtypes[col] in datatype_dict[value_dtype],\
-        f"replacement value for column '{col_name}' should be of type {df_dtypes[col_name]}"
+        (f"replacement value for column '{col}' "
+         f"should be of type {df_dtypes[col]}"
+        )
         
     else:
       assert False, "value should be a scalar, an empty list or a dictionary"

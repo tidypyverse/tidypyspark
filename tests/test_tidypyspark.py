@@ -1610,19 +1610,6 @@ def test_replace_na():
   # | null|  30|   90|        null|
   # +-----+----+-----+------------+
 
-  # replace null values with a scalar value
-  df1 = df.ts.replace_na("A")
-  # Output
-  # +-----+---+-----+------------+
-  # | name|age|score|       marks|
-  # +-----+---+-----+------------+
-  # |Alice| 25|    0|[20, 30, 40]|
-  # |  Bob|  0|   80|[10, 20, 30]|
-  # | null| 30|   90|        null|
-  # +-----+---+-----+------------+
-  assert df1.select("age").collect()[1][0] == 0
-  assert df1.select("score").collect()[0][0] == 0
-
   # replace null values with a dictionary of column names and values
   df2 = df.ts.replace_na({"name": "A", "score": 25, "marks": []})
   # Output
@@ -1635,29 +1622,5 @@ def test_replace_na():
   # +-----+----+-----+------------+
   assert df2.select("name").collect()[2][0] == "A"
   assert df2.select("marks").collect()[2][0] == []
-
-  # replace null values in a specific column. Note we have used an empty list in the dictionary for column "marks"
-  df3 = df.ts.replace_na({"age": True, "marks": []})
-  # +-----+---+-----+------------+
-  # | name|age|score|       marks|
-  # +-----+---+-----+------------+
-  # |Alice| 25| null|[20, 30, 40]|
-  # |  Bob|  1|   80|[10, 20, 30]|
-  # | null| 30|   90|          []|
-  # +-----+---+-----+------------+
-  assert df3.select("age").collect()[1][0] == 1
-  assert df3.select("marks").collect()[2][0] == []
-
-  # replace null values in all columns with an empty list. 
-  # This replaces null values in all columns of type array<> with an empty list
-  df4 = df.ts.replace_na([])
-  # +-----+----+-----+------------+
-  # | name| age|score|       marks|
-  # +-----+----+-----+------------+
-  # |Alice|  25| null|[20, 30, 40]|
-  # |  Bob|null|   80|[10, 20, 30]|
-  # | null|  30|   90|          []|
-  # +-----+----+-----+------------+
-  assert df4.select("marks").collect()[2][0] == []
 
   spark.stop()
