@@ -362,12 +362,10 @@ class acc_on_pyspark():
 
     res = [f'Columns: {ncol}']
 
-    col_strs = []
     names = []
     n_ljust = 0
     dtypes = []
     t_ljust = 0
-    values = []
 
     # Input validation
     assert isinstance(n_rows, int) and n_rows > 0, "n_rows must be a positive integer"
@@ -1358,8 +1356,9 @@ class acc_on_pyspark():
     |  2| SDE|jack| 10|
     +---+----+----+---+
 
-    >>> df1.ts.inner_join(df2, 
-    >>>        sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)', how = 'inner).show()
+    >>> (df1.ts.inner_join(df2, 
+    >>>        sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & 
+    >>>        (RHS.age < 30)', how = 'inner).show())
     +---+----+----+----+------+---+
     | id|name|dept|id_y|dept_y|age|
     +---+----+----+----+------+---+
@@ -1465,7 +1464,8 @@ class acc_on_pyspark():
     |  2|  PM|  jack|  30|
     +---+----+------+----+
 
-    >>> df1.ts.left_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)').show()
+    >>> (df1.ts.left_join(df2, sql_on = '(LHS.id == RHS.id) & 
+    >>>                   (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
     +---+------+----+----+------+----+
     | id|  name|dept|id_y|dept_y| age|
     +---+------+----+----+------+----+
@@ -1559,7 +1559,8 @@ class acc_on_pyspark():
     |  2|  BA|null| 40|
     +---+----+----+---+
 
-    >>> df1.ts.right_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)').show()
+    >>> (df1.ts.right_join(df2, sql_on = '(LHS.id == RHS.id) & 
+    >>>                    (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
     +----+----+----+----+------+---+
     |  id|name|dept|id_y|dept_y|age|
     +----+----+----+----+------+---+
@@ -1648,7 +1649,8 @@ class acc_on_pyspark():
     |  2| SDE|jack| 10|
     +---+----+----+---+
 
-    >>> df1.ts.inner_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)').show()
+    >>> (df1.ts.inner_join(df2, sql_on = '(LHS.id == RHS.id) & 
+    >>>                    (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
     +---+----+----+----+------+---+
     | id|name|dept|id_y|dept_y|age|
     +---+----+----+----+------+---+
@@ -1729,7 +1731,8 @@ class acc_on_pyspark():
     |  2| SDE|  jack|  10|
     +---+----+------+----+
 
-    >>> df1.ts.full_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)').show()
+    >>> (df1.ts.full_join(df2, sql_on = '(LHS.id == RHS.id) & 
+    >>>                   (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
     +----+------+----+----+------+----+
     |  id|  name|dept|id_y|dept_y| age|
     +----+------+----+----+------+----+
@@ -1815,7 +1818,8 @@ class acc_on_pyspark():
     |  1|  PM|  jack|
     +---+----+------+
 
-    >>> df1.ts.anti_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)').show()
+    >>> (df1.ts.anti_join(df2, sql_on = '(LHS.id == RHS.id) & 
+                          (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
     +---+------+----+
     | id|  name|dept|
     +---+------+----+
@@ -1907,7 +1911,8 @@ class acc_on_pyspark():
     # |  2| SDE|jack|
     # +---+----+----+
 
-    >>> df1.ts.semi_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)').show()
+    >>> (df1.ts.semi_join(df2, sql_on = '(LHS.id == RHS.id) & 
+                          (LHS.dept == RHS.dept) & (RHS.age < 30)')).show()
     +---+------+----+
     | id|  name|dept|
     +---+------+----+
