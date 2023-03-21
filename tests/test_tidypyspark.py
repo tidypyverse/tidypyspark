@@ -3,6 +3,14 @@ from tidypyspark.datasets import get_penguins_path
 import tidypyspark.tidypyspark_class as ts
 from tidypyspark._unexported_utils import _is_perfect_sublist
 
+'''
+import tidypyspark.tidypyspark_class as ts
+from pyspark.sql import SparkSession 
+import pyspark.sql.functions as F 
+spark = SparkSession.builder.getOrCreate()
+import pyspark
+pen = spark.read.csv('src/tidypyspark/data/pen.csv', header = True).drop("_c0")
+'''
 
 @pytest.fixture
 def penguins_data():

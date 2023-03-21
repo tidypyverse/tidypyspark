@@ -976,28 +976,21 @@ class acc_on_pyspark():
     
     assert isinstance(how, str),\
       "arg 'how' should be a string"
-    assert how in ['inner', 'left', 'right', 'full', 'semi', 'anti'],\
-      "arg 'how' should be one among: 'inner', 'left', 'right', 'full', 'semi', 'anti', 'cross'"
+    valid_joins = ['inner', 'left', 'right', 'full', 'semi', 'anti']
+    assert how in valid_joins,\
+      f"arg 'how' should be one among: {valid_joins}"
     
-    cn_x = self.colnames
-    print(cn_x)
     cn_y = pyspark_df.columns
-    print(cn_y)
+    assert _is_unique_list(cn_y),\
+      "column names of 'pyspark_df' should be unique"
   
-    assert ((on is not None) + ((on_x is not None) and (on_y is not None)) 
+    assert ((on is not None) 
+            + ((on_x is not None) and (on_y is not None)) 
             + (sql_on is not None) == 1),\
       "Exactly one among 'on', 'sql_on', 'on_x and on_y' should be specified"
   
     if on is not None:
-      assert _is_string_or_string_list(on),\
-        ("'on' should be a string or a list of strings of common "
-          "column names"
-        )
-      on = _enlist(on)
-      assert _is_unique_list(on),\
-        "arg 'on' should not have duplicates"
-      assert set(on).issubset(cn_x),\
-        "arg 'on' should be a subset of column names of x"
+      on = self._validate_column_names(on)
       assert set(on).issubset(cn_y),\
         "arg 'on' should be a subset of column names of y"
     elif sql_on is not None:
@@ -1006,35 +999,26 @@ class acc_on_pyspark():
     else:
       assert on_x is not None and on_y is not None,\
         ("When arg 'on' is None, " 
-          "both args'on_x' and 'on_y' should not be None"
+          "both args 'on_x' and 'on_y' should be present"
         )
-      assert _is_string_or_string_list(on_x),\
-        "arg 'on_x' should be a string or a list of strings"
-      assert _is_string_or_string_list(on_y),\
-        "arg 'on_y' should be a string or a list of strings"
-      
+        
       on_x = _enlist(on_x)
       on_y = _enlist(on_y)
       
-      assert _is_unique_list(on_x),\
-        "arg 'on_x' should not have duplicates"
+      on_x = self._validate_column_names(on_x)
+      
+      assert _is_string_or_string_list(on_y),\
+        "arg 'on_y' should be a string or a list of strings"
+      
       assert _is_unique_list(on_y),\
         "arg 'on_y' should not have duplicates"    
-      assert set(on_x).issubset(cn_x),\
-        "arg 'on_x' should be a subset of column names of x"
       assert set(on_y).issubset(cn_y),\
         "arg 'on_y' should be a subset of column names of y"
       assert len(on_x) == len(on_y),\
         "Lengths of arg 'on_x' and arg 'on_y' should match"
       
-    assert isinstance(suffix, list),\
-      "arg 'suffix' should be a list"
-          
-    assert len(suffix) == 2,\
-      "arg 'suffix' should be a list of length 2"
-        
-    assert isinstance(suffix[0], str) and isinstance(suffix[1], str),\
-      "arg 'suffix' should be a list of two strings"
+    assert _is_string_or_string_list(suffix) and len(suffix) == 2,\
+      "arg 'suffix' should be a list of strings of length 2"
     
     assert suffix[0] != suffix[1],\
       "left and right suffix should be different."
@@ -1047,24 +1031,35 @@ class acc_on_pyspark():
     cols_LHS = LHS.columns
     cols_RHS = RHS.columns
 
-    # Create a dictionary with old column names as keys and values as old column names + suffix
+    # Create a dictionary with old column names as keys and values 
+    # as old column names + suffix
     new_cols_LHS = list(setlist(cols_LHS) - setlist(on))
     old_new_dict_LHS = {col: col + suffix[0] for col in new_cols_LHS}      
 
-    # Create a dictionary with old column names as keys and values as old column names + suffix
+    # Create a dictionary with old column names as keys and values
+    # as old column names + suffix
     new_cols_RHS = list(setlist(cols_RHS) - setlist(on))
     old_new_dict_RHS = {col: col + suffix[1] for col in new_cols_RHS}
 
-    assert len(list(set(old_new_dict_LHS.values()).intersection(old_new_dict_RHS.values()))) == 0,\
-      "Column names should be unique after joining the dataframes"
+    int_new_cols = (set(old_new_dict_LHS.values())
+                    .intersection(old_new_dict_RHS.values())
+                    )
+    assert len(int_new_cols) == 0,\
+      "Resulting column names should be unique after joining the dataframes"
     
     # Create a list of columns with alias for LHS df in pyspark convention.
-    select_col_with_alias_LHS = [F.col(c).alias(old_new_dict_LHS.get(c, c)) for c in cols_LHS]
+    select_col_with_alias_LHS = (
+      [F.col(c).alias(old_new_dict_LHS.get(c, c))
+       for c in cols_LHS
+       ])
     # Create the new LHS df with the new column names.
     new_LHS = LHS.select(select_col_with_alias_LHS)
     
     # Create a list of columns with alias for RHS df in pyspark convention.
-    select_col_with_alias_RHS = [F.col(c).alias(old_new_dict_RHS.get(c, c)) for c in cols_RHS]
+    select_col_with_alias_RHS = (
+      [F.col(c).alias(old_new_dict_RHS.get(c, c))
+       for c in cols_RHS
+       ])
     # Create the new RHS df with the new column names.
     new_RHS = RHS.select(select_col_with_alias_RHS)
 
@@ -1076,12 +1071,16 @@ class acc_on_pyspark():
     
     renamed_col_dict = {} # Dictionary to store the renamed columns
     for col in res.columns: 
-      for s in suffix:  # use a loop to check each suffix in the list
-        if len(s) > 0 and col.endswith(s):  # check if the column name ends with the suffix
-            new_col = col[:-len(s)] # remove the suffix from the column name
-            # Check if the new column name is not a duplicate and is not in the list of columns to be joined
-            if count_cols[new_col] < 2 and new_col not in on:      
-                renamed_col_dict[col] = new_col 
+      # use a loop to check each suffix in the list
+      for s in suffix: 
+        # check if the column name ends with the suffix
+        if len(s) > 0 and col.endswith(s): 
+          # remove the suffix from the column name
+          new_col = col[:-len(s)] 
+          # Check if the new column name is not a duplicate and
+          # is not in the list of columns to be joined
+          if count_cols[new_col] < 2 and new_col not in on:      
+            renamed_col_dict[col] = new_col 
 
     # Rename the columns in the dataframe
     if len(renamed_col_dict) > 0:
@@ -1094,12 +1093,17 @@ class acc_on_pyspark():
     cols_LHS = LHS.columns
     cols_RHS = RHS.columns
 
-    # Create a dictionary with old column names as keys and values as old column names + suffix
+    # Create a dictionary with old column names as keys and values
+    # as old column names + suffix
     old_new_dict_LHS = {col: col + suffix[0] for col in cols_LHS}
     old_new_dict_RHS = {col: col + suffix[1] for col in cols_RHS}
 
-    assert len(list(set(old_new_dict_LHS.values()).intersection(old_new_dict_RHS.values()))) == 0,\
-      "Column names should be unique after joining the dataframes" 
+    int_new_cols = (set(old_new_dict_LHS.values())
+                    .intersection(old_new_dict_RHS.values())
+                    )
+    
+    assert len(int_new_cols) == 0,\
+      "Resulting column names should be unique after joining the dataframes"
 
     # Get the column names from the sql_on command.
     # e.g Format - {'LHS': ['dept', 'id'], 'RHS': ['dept', 'id', 'age']}
@@ -1107,7 +1111,10 @@ class acc_on_pyspark():
     
     # Get the sql_on statement with suffix.
     # e.g Format - "LHS.dept = RHS.dept_y and LHS.id = RHS.id_y"
-    sql_on = self._get_sql_on_statement_with_suffix(sql_on, suffix, column_names_tuple_list)
+    sql_on = self._get_sql_on_statement_with_suffix(sql_on,
+                                                    suffix,
+                                                    column_names_tuple_list
+                                                    )
 
     # Rename the columns of the LHS and RHS dataframes.
     LHS = LHS.ts.rename(old_new_dict_LHS) 
@@ -1117,11 +1124,21 @@ class acc_on_pyspark():
     res = LHS.join(RHS, on = eval(sql_on), how = how)
 
     # Get the count of columns in the original joined dataframe
-    res = self._get_spark_df_by_removing_suffix(suffix, cols_LHS, cols_RHS, res)
+    res = self._get_spark_df_by_removing_suffix(suffix,
+                                                cols_LHS,
+                                                cols_RHS,
+                                                res
+                                                )
 
     return res
   
-  def _execute_on_x_on_y_command_for_join(self, on_x, on_y, suffix, how, LHS, RHS):
+  def _execute_on_x_on_y_command_for_join(self,
+                                          on_x,
+                                          on_y,
+                                          suffix,
+                                          how,
+                                          LHS,
+                                          RHS):
 
     on_x = _enlist(on_x)
     on_y = _enlist(on_y)
@@ -1145,22 +1162,28 @@ class acc_on_pyspark():
 
     return res
 
-  def _get_sql_on_statement_with_suffix(self, sql_on, suffix, column_names_tuple_list):
+  def _get_sql_on_statement_with_suffix(self,
+                                        sql_on,
+                                        suffix,
+                                        column_names_tuple_list):
       
     # Create a list of column names with suffix for LHS and RHS.
     # e.g Format - ['LHS.dept', 'LHS.id', 'RHS.dept', 'RHS.id', 'RHS.age']
     sql_on_LHS_cols = ['LHS.' + col for col in column_names_tuple_list['LHS']]
     sql_on_RHS_cols = ['RHS.' + col for col in column_names_tuple_list['RHS']]
 
-    # Create a dictionary with old column names as keys and values as old column names + suffi
+    # Create a dictionary with old column names as keys and values as 
+    # old column names + suffix
     # e.g Format - {'LHS.dept': 'new_LHS.dept_suffix[0]', 
-    #               'RHS.dept': 'new_RHS.dept_suffix[1]', 'RHS.age': 'new_RHS.age_suffix[1]'}
+    #               'RHS.dept': 'new_RHS.dept_suffix[1]',
+    #               'RHS.age': 'new_RHS.age_suffix[1]'}
     sql_on_LHS_cols_dict = {col: col + suffix[0] for col in sql_on_LHS_cols}
     sql_on_RHS_cols_dict = {col: col + suffix[1] for col in sql_on_RHS_cols}
     # Merge the two dictionaries
     sql_on_cols_dict = {**sql_on_LHS_cols_dict, **sql_on_RHS_cols_dict}
     
-    # Replace the column names in the sql_on command with the new column names in the sql_on_cols_dict
+    # Replace the column names in the sql_on command with the new 
+    # column names in the sql_on_cols_dict
     for key, value in sql_on_cols_dict.items():
       sql_on = sql_on.replace(key, value)
     
@@ -1169,22 +1192,22 @@ class acc_on_pyspark():
   def _extract_cols_from_sql_on_command(self, sql_on):
 
     # Set regex pattern.
-    # e.g. 'LHS.dept == RHS.dept' will be converted to [('LHS', 'dept'), ('RHS', 'dept')]
+    # e.g. 'LHS.dept == RHS.dept' will be converted to
+    # [('LHS', 'dept'), ('RHS', 'dept')]
     pattern = '([a-zA-Z0-9]+)\.([a-zA-Z0-9]+)'
 
     # Get all column names with their table names
     # Format - [('LH', 'dept'), ('LHS', 'dept'), ('RHS', 'age')]
     column_names_tuple_list = re.findall(pattern, sql_on)
 
-    # Filtering tuples having only LHS or RHS as the first element of the tuple
-    filtered_tuples = [(key, value) for (key, value) in column_names_tuple_list if key=='LHS' or key=='RHS']
-
-    # Generates a dictionary with LHS and RHS as keys and column names as values.
+    # Generates a dictionary with LHS and RHS as keys and
+    # column names as values.
     # e.g. {'RHS': ['id2', 'dept', 'age'], 'LHS': ['dept']}
-    dict_from_tuple = {key:[] for (key, _) in filtered_tuples}
-    for tpl in filtered_tuples:
-        dict_from_tuple[tpl[0]].append(tpl[1])
-
+    dict_from_tuple = dict()
+    for tup in column_names_tuple_list.items():
+      if key=='LHS' or key=='RHS':
+        dict_from_tuple[tup[0]] = tup[1]
+    
     return dict_from_tuple
   
   def _get_spark_df_by_removing_suffix(self, suffix, cols_LHS, cols_RHS, res):
@@ -1192,13 +1215,17 @@ class acc_on_pyspark():
     # Get the frequency count of columns in the original joined dataframe.
     count_cols = Counter(cols_LHS + cols_RHS)
   
-    renamed_col_dict = {} # Dictionary to store the renamed columns
+    renamed_col_dict = {}
     for col in res.columns: 
-      for s in suffix:  # use a loop to check each suffix in the list
-        if len(s) > 0 and col.endswith(s):  # check if the column name ends with the suffix
-            new_col = col[:-len(s)] # remove the suffix from the column name
-            if count_cols[new_col] < 2: # Check if the new column name is not a duplicate    
-                renamed_col_dict[col] = new_col
+      # use a loop to check each suffix in the list
+      for s in suffix:
+        # check if the column name ends with the suffix
+        if len(s) > 0 and col.endswith(s):  
+          # remove the suffix from the column name
+          new_col = col[:-len(s)] 
+          # Check if the new column name is not a duplicate
+          if count_cols[new_col] < 2:
+            renamed_col_dict[col] = new_col
 
     # Rename the columns in the dataframe
     if len(renamed_col_dict) > 0:
@@ -1230,12 +1257,16 @@ class acc_on_pyspark():
     cols_LHS = LHS.columns
     cols_RHS = RHS.columns
 
-    # Create a dictionary with old column names as keys and values as old column names + suffix
+    # Create a dictionary with old column names as keys and values
+    # as old column names + suffix
     old_new_dict_LHS = {col: col + suffix[0] for col in cols_LHS}
     old_new_dict_RHS = {col: col + suffix[1] for col in cols_RHS}
-
-    assert len(set(old_new_dict_LHS.values()).intersection(old_new_dict_RHS.values())) == 0,\
-      "Column names should be unique after joining the dataframes" 
+    
+    int_new_cols = (set(old_new_dict_LHS.values())
+                    .intersection(old_new_dict_RHS.values())
+                    )
+    assert len(int_new_cols) == 0,\
+      "Resulting column names should be unique after joining the dataframes" 
     
     # Rename the columns in the LHS and RHS dataframes
     LHS = LHS.ts.rename(old_new_dict_LHS)
@@ -1245,7 +1276,11 @@ class acc_on_pyspark():
     res = LHS.crossJoin(RHS)
 
     # Remove the unnecessary suffix(es) from the column names
-    res = self._get_spark_df_by_removing_suffix(suffix, cols_LHS, cols_RHS, res)
+    res = self._get_spark_df_by_removing_suffix(suffix,
+                                                cols_LHS,
+                                                cols_RHS,
+                                                res
+                                                )
 
     return res
   
@@ -1259,30 +1294,33 @@ class acc_on_pyspark():
            how = 'inner'
            ): 
     '''
-    Joins columns of y to self by performing different types of joins.
+    Joins columns of y to self
     
     Parameters
     ----------
-    pyspark_df (pyspark.sql.DataFrame): DataFrame to join with current DataFrame.
+    pyspark_df (pyspark.sql.DataFrame)
     on: string or a list of strings
-        Common column names to match
+      Common column names to match
     on_x: string or a list of strings
-        Column names of self to be matched with arg 'on_y'
+      Column names of self to be matched with arg 'on_y'
     on_y: string or a list of strings
-        Column names of y to be matched with arg 'on_x'
+      Column names of y to be matched with arg 'on_x'
     sql_on: string
-        SQL expression used to join both DataFrames. Recommended for inequality joins.
-        The left table has to be specified as 'LHS' and the right table as 'RHS'.
-        e.g. '(LHS.dept == RHS.dept) & (LHS.age == RHS.age) & (RHS.age < 30)'
-    suffix: list of two stings
-        suffix to append the columns of left and right in order to create unique names after the merge
+      SQL expression used to join both DataFrames. 
+      Recommended for inequality joins.
+      The left table has to be specified as 'LHS' and the right table as 'RHS'.
+      e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+    suffix: list of two strings
+      suffix to append the columns of left and right in order to create
+      unique names after the join
     how: string
-        Type of join to be performed. Default is 'inner'.
-        Other options are 'left', 'right', 'outer', 'full', 'cross', 'semi', 'anti'
+      Type of join to be performed. Default is 'inner'.
+      Supports: 'inner', 'left', 'right', 'outer', 'full', 'cross',
+                'semi', 'anti'
       
     Returns
     -------
-    joined DataFrame (pyspark.sql.DataFrame)
+    pyspark dataframe
 
     Examples
     --------
@@ -1339,9 +1377,17 @@ class acc_on_pyspark():
     if on is not None:
       res = self._execute_on_command_for_join(on, suffix, how, LHS, RHS)
     elif sql_on is not None:
-      res = self._execute_sql_on_command_for_join(sql_on, suffix, how, LHS, RHS)
+      res = self._execute_sql_on_command_for_join(sql_on,
+                                                  suffix,
+                                                  how,
+                                                  LHS, RHS
+                                                  )
     else:
-      res = self._execute_on_x_on_y_command_for_join(on_x, on_y, suffix, how, LHS, RHS)
+      res = self._execute_on_x_on_y_command_for_join(on_x, on_y,
+                                                     suffix,
+                                                     how,
+                                                     LHS, RHS
+                                                     )
 
     return res
 
@@ -1359,23 +1405,25 @@ class acc_on_pyspark():
 
     Parameters
     ----------
-    pyspark_df (pyspark.sql.DataFrame): DataFrame to join with current DataFrame.
+    pyspark_df (pyspark.sql.DataFrame)
     on: string or a list of strings
-        Common column names to match
+      Common column names to match
     on_x: string or a list of strings
-        Column names of self to be matched with arg 'on_y'
+      Column names of self to be matched with arg 'on_y'
     on_y: string or a list of strings
-        Column names of y to be matched with arg 'on_x'
+      Column names of y to be matched with arg 'on_x'
     sql_on: string
-        SQL expression used to join both DataFrames. Recommended for inequality joins.
-        The left table has to be specified as 'LHS' and the right table as 'RHS'.
-        e.g. '(LHS.dept == RHS.dept) & (LHS.age == RHS.age) & (RHS.age < 30)'
-    suffix: list of two stings
-        suffix to append the columns of left and right in order to create unique names after the merge
+      SQL expression used to join both DataFrames. 
+      Recommended for inequality joins.
+      The left table has to be specified as 'LHS' and the right table as 'RHS'.
+      e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+    suffix: list of two strings
+      suffix to append the columns of left and right in order to create
+      unique names after the join
       
     Returns
     -------
-    joined DataFrame (pyspark.sql.DataFrame)
+    pyspark dataframe
 
     Examples
     --------
@@ -1454,23 +1502,25 @@ class acc_on_pyspark():
 
     Parameters
     ----------
-    pyspark_df (pyspark.sql.DataFrame): DataFrame to join with current DataFrame.
+    pyspark_df (pyspark.sql.DataFrame)
     on: string or a list of strings
-        Common column names to match
+      Common column names to match
     on_x: string or a list of strings
-        Column names of self to be matched with arg 'on_y'
-    on_y: string or a list of strings 
-        Column names of y to be matched with arg 'on_x'
+      Column names of self to be matched with arg 'on_y'
+    on_y: string or a list of strings
+      Column names of y to be matched with arg 'on_x'
     sql_on: string
-        SQL expression used to join both DataFrames. Recommended for inequality joins.
-        The left table has to be specified as 'LHS' and the right table as 'RHS'.
-        e.g. '(LHS.dept == RHS.dept) & (LHS.age == RHS.age) & (RHS.age < 30)'
-    suffix: list of two stings
-        suffix to append the columns of left and right in order to create unique names after the merge
+      SQL expression used to join both DataFrames. 
+      Recommended for inequality joins.
+      The left table has to be specified as 'LHS' and the right table as 'RHS'.
+      e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+    suffix: list of two strings
+      suffix to append the columns of left and right in order to create
+      unique names after the join
 
     Returns
     -------
-    joined DataFrame (pyspark.sql.DataFrame)
+    pyspark dataframe
     
     Examples
     --------
@@ -1542,23 +1592,25 @@ class acc_on_pyspark():
 
     Parameters
     ----------
-    pyspark_df (pyspark.sql.DataFrame): DataFrame to join with current DataFrame.
+    pyspark_df (pyspark.sql.DataFrame)
     on: string or a list of strings
-        Common column names to match
+      Common column names to match
     on_x: string or a list of strings
-        Column names of self to be matched with arg 'on_y'
-    on_y: string or a list of strings 
-        Column names of y to be matched with arg 'on_x'
+      Column names of self to be matched with arg 'on_y'
+    on_y: string or a list of strings
+      Column names of y to be matched with arg 'on_x'
     sql_on: string
-        SQL expression used to join both DataFrames. Recommended for inequality joins.
-        The left table has to be specified as 'LHS' and the right table as 'RHS'.
-        e.g. '(LHS.dept == RHS.dept) & (LHS.age == RHS.age) & (RHS.age < 30)'
-    suffix: list of two stings
-        suffix to append the columns of left and right in order to create unique names after the merge
+      SQL expression used to join both DataFrames. 
+      Recommended for inequality joins.
+      The left table has to be specified as 'LHS' and the right table as 'RHS'.
+      e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+    suffix: list of two strings
+      suffix to append the columns of left and right in order to create
+      unique names after the join
 
     Returns
     -------
-    joined DataFrame (pyspark.sql.DataFrame)
+    pyspark dataframe
     
     Examples
     --------
@@ -1617,23 +1669,25 @@ class acc_on_pyspark():
 
     Parameters
     ----------
-    pyspark_df (pyspark.sql.DataFrame): DataFrame to join with current DataFrame.
+    pyspark_df (pyspark.sql.DataFrame)
     on: string or a list of strings
-        Common column names to match
+      Common column names to match
     on_x: string or a list of strings
-        Column names of self to be matched with arg 'on_y'
-    on_y: string or a list of strings 
-        Column names of y to be matched with arg 'on_x'
+      Column names of self to be matched with arg 'on_y'
+    on_y: string or a list of strings
+      Column names of y to be matched with arg 'on_x'
     sql_on: string
-        SQL expression used to join both DataFrames. Recommended for inequality joins.
-        The left table has to be specified as 'LHS' and the right table as 'RHS'.
-        e.g. '(LHS.dept == RHS.dept) & (LHS.age == RHS.age) & (RHS.age < 30)'
-    suffix: list of two stings
-        suffix to append the columns of left and right in order to create unique names after the merge
+      SQL expression used to join both DataFrames. 
+      Recommended for inequality joins.
+      The left table has to be specified as 'LHS' and the right table as 'RHS'.
+      e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+    suffix: list of two strings
+      suffix to append the columns of left and right in order to create
+      unique names after the join
 
     Returns
     -------
-    joined DataFrame (pyspark.sql.DataFrame)
+    pyspark dataframe
     
     Examples
     --------
@@ -1688,6 +1742,7 @@ class acc_on_pyspark():
     
     return self.join(pyspark_df, on, on_x, on_y, sql_on, suffix, 'full')
   
+  # alias
   outer_join = full_join
   
   def anti_join(self, 
@@ -1703,23 +1758,25 @@ class acc_on_pyspark():
 
     Parameters
     ----------
-    pyspark_df (pyspark.sql.DataFrame): DataFrame to join with current DataFrame.
+    pyspark_df (pyspark.sql.DataFrame)
     on: string or a list of strings
-        Common column names to match
+      Common column names to match
     on_x: string or a list of strings
-        Column names of self to be matched with arg 'on_y'
+      Column names of self to be matched with arg 'on_y'
     on_y: string or a list of strings
-        Column names of y to be matched with arg 'on_x'
+      Column names of y to be matched with arg 'on_x'
     sql_on: string
-        SQL expression used to join both DataFrames. Recommended for inequality joins.
-        The left table has to be specified as 'LHS' and the right table as 'RHS'.
-        e.g. '(LHS.dept == RHS.dept) & (LHS.age == RHS.age) & (RHS.age < 30)'
-    suffix: list of two stings
-        suffix to append the columns of left and right in order to create unique names after the merge
-      
+      SQL expression used to join both DataFrames. 
+      Recommended for inequality joins.
+      The left table has to be specified as 'LHS' and the right table as 'RHS'.
+      e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+    suffix: list of two strings
+      suffix to append the columns of left and right in order to create
+      unique names after the join
+
     Returns
     -------
-    joined DataFrame (pyspark.sql.DataFrame)
+    pyspark dataframe
 
     Examples
     --------
@@ -1776,7 +1833,9 @@ class acc_on_pyspark():
     +---+------+----+
     '''
     
-    return self.join(pyspark_df, on, on_x, on_y, sql_on, suffix = ["", "_y"], how = 'anti')
+    return self.join(pyspark_df, on, on_x, on_y, sql_on,
+                     suffix = ["", "_y"], how = 'anti'
+                     )
   
   def semi_join(self, 
                 pyspark_df, 
@@ -1791,23 +1850,25 @@ class acc_on_pyspark():
 
     Parameters
     ----------
-    pyspark_df (pyspark.sql.DataFrame): DataFrame to join with current DataFrame.
+    pyspark_df (pyspark.sql.DataFrame)
     on: string or a list of strings
-        Common column names to match
+      Common column names to match
     on_x: string or a list of strings
-        Column names of self to be matched with arg 'on_y'
+      Column names of self to be matched with arg 'on_y'
     on_y: string or a list of strings
-        Column names of y to be matched with arg 'on_x'
+      Column names of y to be matched with arg 'on_x'
     sql_on: string
-        SQL expression used to join both DataFrames. Recommended for inequality joins.
-        The left table has to be specified as 'LHS' and the right table as 'RHS'.
-        e.g. '(LHS.dept == RHS.dept) & (LHS.age == RHS.age) & (RHS.age < 30)'
-    suffix: list of two stings
-        suffix to append the columns of left and right in order to create unique names after the merge
-      
+      SQL expression used to join both DataFrames. 
+      Recommended for inequality joins.
+      The left table has to be specified as 'LHS' and the right table as 'RHS'.
+      e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+    suffix: list of two strings
+      suffix to append the columns of left and right in order to create
+      unique names after the join
+
     Returns
     -------
-    joined DataFrame (pyspark.sql.DataFrame)
+    pyspark dataframe
 
     Examples
     --------
@@ -1858,7 +1919,9 @@ class acc_on_pyspark():
     # +---+----+----+
     '''
      
-    return self.join(pyspark_df, on, on_x, on_y, sql_on, suffix = ["", "_y"], how = 'semi')
+    return self.join(pyspark_df, on, on_x, on_y, sql_on,
+                     suffix = ["", "_y"], how = 'semi'
+                     )
   
   def cross_join(self, pyspark_df, suffix = ["", "_y"]):
     '''
@@ -1866,13 +1929,14 @@ class acc_on_pyspark():
 
     Parameters
     ----------
-    pyspark_df (pyspark.sql.DataFrame): DataFrame to join with current DataFrame.
-    suffix: list of two stings
-        suffix to append the columns of left and right in order to create unique names after the merge
-      
+    pyspark_df (pyspark.sql.DataFrame)
+    suffix: list of two strings
+      suffix to append the columns of left and right in order to create
+      unique names after the join
+
     Returns
     -------
-    joined DataFrame (pyspark.sql.DataFrame)
+    pyspark dataframe
 
     Examples
     --------
@@ -2103,7 +2167,8 @@ class acc_on_pyspark():
     assert isinstance(n, int) and n > 0,\
       "n should be a positive integer"
     order_by_spec = self._validate_order_by((order_by_column, 'asc'))
-    assert isinstance(with_ties, bool)
+    assert isinstance(with_ties, bool),\
+      "'with_ties' should be a bool"
     
     # create windowspec
     if by is None:
@@ -2142,7 +2207,7 @@ class acc_on_pyspark():
     n : int
       Number of rows to subset
     order_by_column : string
-      Name of the column to order by in descending nulls to last
+      Name of the column to order by in descending nulls to first
     with_ties : bool, optional
       Whether to return all rows when ordering results in ties.
       The default is True.
@@ -2168,7 +2233,8 @@ class acc_on_pyspark():
     assert isinstance(n, int) and n > 0,\
       "n should be a positive integer"
     order_by_spec = self._validate_order_by((order_by_column, 'desc'))
-    assert isinstance(with_ties, bool)
+    assert isinstance(with_ties, bool),\
+      "'with_ties' should be a bool"
     
     # create windowspec
     if by is None:
@@ -2243,6 +2309,9 @@ class acc_on_pyspark():
     
     return res
   
+  # alias
+  bind_rows = rbind
+  
   # union --------------------------------------------------------------------
   def union(self, pyspark_df):
     '''
@@ -2284,12 +2353,11 @@ class acc_on_pyspark():
     return res
   
   # pivot methods ------------------------------------------------------------
-
   def pivot_wider(self, 
                   names_from,
                   values_from,
-                  values_fill = None, # implement
-                  values_fn = None, # implement
+                  values_fill = None,
+                  values_fn = None, 
                   id_cols = None,
                   sep = "__",
                   names_prefix = "",
@@ -2301,43 +2369,49 @@ class acc_on_pyspark():
     Parameters
     ----------
     names_from: string or list of strings
-            column names whose unique combinations are expected to become column
-            new names in the result
-        
+      column names whose unique combinations are expected to become column
+      new names in the result
     values_from: string or list of strings
-        column names to fill the new columns with
-    
+      column names to fill the new columns with
     values_fill: scalar, list or dict (default is None)
-        Optionally, a (scalar) value that specifies what each value should be filled in with when missing.
-        This can be a dictionary if you want to apply different fill values to different value columns.
-        Make sure only compatible data types are used in conjunction with the pyspark column.
-        Missing values can only be filled with a scalar, or empty python list value.
+      Optionally, a (scalar) value that specifies what each value should be
+      filled in with when missing.
+      This can be a dictionary if you want to apply different fill values to
+      different value columns.
+      Make sure only compatible data types are used in conjunction with 
+      the pyspark column.
+      Missing values can only be filled with a scalar, or empty python
+      list value.
     
-    values_fn: string(of pyspark functions) or a dict of strings(of pyspark funtions) (default is None)
-        A function to handle multiple values per row in the result.
-        When a dict, keys should be a subset of arg 'values_from'.
-        F.collect_list is applied by default in case nothing is specified.
-        The string pf pyspark functions should be passed as a string starting with 'F.'
-        This is to indicate that the function is from pyspark.
-        Unlist the pivot columns to scalar values if and only if:
-        1. values_fn is None and values_fn is None
-        2. all the pivot columns are of type list/array and all the pivot_cols have values with a maximum length of 1.
+    values_fn: string(of pyspark functions) or 
+               a dict of strings(of pyspark funtions) (default is None)
+      A function to handle multiple values per row in the result.
+      When a dict, keys should be a subset of arg 'values_from'.
+      F.collect_list is applied by default in case nothing is specified.
+      The string pf pyspark functions should be passed as a string 
+      starting with 'F.'
+      This is to indicate that the function is from pyspark.
+      Unlist the pivot columns to scalar values if and only if:
+      1. values_fn is None and values_fn is None
+      2. all the pivot columns are of type list/array and all the pivot_cols
+         have values with a maximum length of 1.
     
     id_cols: string or list of strings, default is None
-        Names of the columns that should uniquely identify an observation 
-        (row) after widening (columns of the original dataframe that are
-        supposed to stay put)
+      Names of the columns that should uniquely identify an observation 
+      (row) after widening (columns of the original dataframe that are
+      supposed to stay put)
         
     sep: string (default is "__")
-        seperator to use while creating resulting column names
+      seperator to use while creating resulting column names
         
     names_prefix: string (default is "")
-        prefix for new columns
+      prefix for new columns
 
     names_expand: boolean (default is False)
-        When True, he output will contain column names corresponding 
-        to a complete expansion of all possible values in names_from. 
-        Implicit factor levels that aren't represented in the data will become explicit. 
+      When True, he output will contain column names corresponding 
+      to a complete expansion of all possible values in names_from. 
+      Implicit factor levels that aren't represented in the data will
+      become explicit. 
         
     Returns
     -------
@@ -2397,27 +2471,27 @@ class acc_on_pyspark():
     values_from = self._validate_column_names(values_from)
 
     assert len(set(values_from).intersection(names_from)) == 0,\
-        ("arg 'names_from' and 'values_from' should not "
-        "have common column names"
-        )
+      ("arg 'names_from' and 'values_from' should not "
+       "have common column names"
+       )
     names_values_from = set(values_from).union(names_from)
     
     if id_cols is None:
-        id_cols = list(set(cn).difference(names_values_from))
-        if len(id_cols) == 0:
-            raise Exception(
-                ("'id_cols' is turning out to be empty. Choose the "
-                "'names_from' and 'values_from' appropriately or specify "
-                "'id_cols' explicitly."
-                ))
-        else:
-            print("'id_cols' chosen: " + str(id_cols))
+      id_cols = list(set(cn).difference(names_values_from))
+      if len(id_cols) == 0:
+        raise Exception(
+          ("'id_cols' is turning out to be empty. Choose the "
+           "'names_from' and 'values_from' appropriately or specify "
+           "'id_cols' explicitly."
+           ))
+      else:
+          print("'id_cols' chosen: " + str(id_cols))
     else:
-        id_cols = self._validate_column_names(id_cols)
-        assert len(set(id_cols).intersection(names_values_from)) == 0,\
-            ("arg 'id_cols' should not have common names with either "
-            "'names_from' or 'values_from'"
-            )
+      id_cols = self._validate_column_names(id_cols)
+      assert len(set(id_cols).intersection(names_values_from)) == 0,\
+        ("arg 'id_cols' should not have common names with either "
+         "'names_from' or 'values_from'"
+         )
         
     assert (values_fn is None
             or isinstance(values_fn, dict)
@@ -2427,27 +2501,31 @@ class acc_on_pyspark():
     
     if isinstance(values_fn, str):
       assert values_fn.startswith('F.'),\
-        "arg 'values_fn' should be a string starting with 'F.' It indicates a pyspark function."
+        ("arg 'values_fn' should be a string starting with 'F.'. "
+         " It indicates a pyspark function.")
     elif isinstance(values_fn, dict):
       assert set(values_fn.keys()).issubset(set(values_from)),\
-        "arg 'values_fn' should be a dictionary with keys as a subset of 'values_from'"
+        ("arg 'values_fn' should be a dictionary with keys as a subset "
+         "of 'values_from'")
       assert all([fn.startswith('F.') for fn in values_fn.values()]),\
-        "arg 'values_fn' should be a dictionary of strings starting with 'F.' It indicates a pyspark function."
+        ("arg 'values_fn' should be a dictionary of strings starting with "
+         "'F.' It indicates a pyspark function.")
       
     if isinstance(values_fill, dict):
       assert set(values_fill.keys()).issubset(set(values_from)),\
-        "arg 'values_fill' should be a dictionary with keys as a subset of 'values_from'"
+        ("arg 'values_fill' should be a dictionary with keys as a subset "
+         "of 'values_from'")
     
     assert isinstance(sep, str),\
-        "arg 'sep' should be a string"
+      "arg 'sep' should be a string"
         
     assert isinstance(names_prefix, str),\
-        "arg 'names_prefix' should be a string without spaces"
+      "arg 'names_prefix' should be a string without spaces"
     assert ' ' not in names_prefix,\
-        "arg 'names_prefix' should be a string without spaces"
+      "arg 'names_prefix' should be a string without spaces"
     
     assert isinstance(names_expand, bool),\
-        "arg 'names_expand' should be a boolean"
+      "arg 'names_expand' should be a boolean"
     
     df = self.__data
 
@@ -2456,47 +2534,65 @@ class acc_on_pyspark():
     names_from_pyspark_expr = [F.col(name) for name in names_from]
 
     # Create the pivot column in the dataframe via names_from_pyspark_expr
-    # e.g Column<'name__name2'> for names_from = ['name', 'name2'], where sep = '__'
+    # e.g Column<'name__name2'> for names_from = ['name', 'name2'],
+    # where sep = '__'
     df = df.withColumn('pivot_col', F.concat_ws(sep, *names_from_pyspark_expr))
 
     # Construct the pivot columns via names_from and names_from_pyspark_expr
-    # When names_expand = True, it will return all possible combinations of values in names_from
+    # When names_expand = True, it will return all possible combinations of
+    # values in names_from
     # When names_expand = False, it will return the unique values in names_from
-    pivot_cols = self._get_pivot_columns(names_from, sep, names_expand, df, names_from_pyspark_expr)
+    pivot_cols = self._get_pivot_columns(names_from, sep, names_expand,
+                                         df, names_from_pyspark_expr
+                                         )
 
     # Construct the pyspark expression for the values_from.
-    # e.g. [Column<'avg(dept) AS dept'>, Column<'collect_list(dept2) AS dept2'>] 
-    # for values_from = ['dept', 'dept2'] and values_fn = {'dept': 'avg', 'dept2': 'collect_list'}
-    values_from_pyspark_expr = self._construct_pyspark_expr_from_values_from(values_from, values_fn)
+    # e.g. [Column<'avg(dept) AS dept'>,
+    # Column<'collect_list(dept2) AS dept2'>] 
+    # for values_from = ['dept', 'dept2'] and 
+    #     values_fn = {'dept': 'avg', 'dept2': 'collect_list'}
+    values_from_pyspark_expr = ( 
+      self._construct_pyspark_expr_from_values_from(values_from, values_fn))
 
     # Core logic for pivot_wider
     df = (df.groupBy(id_cols)
             .pivot('pivot_col', pivot_cols)
             .agg(*values_from_pyspark_expr)
-          )
+            )
 
     # Get the new pivot columns
     new_pivot_cols = list(set(df.columns).difference(id_cols))
 
     # Fill missing values in the pivot columns.
-    df = self._fill_missing_values_for_pivot_columns(values_fill, df, new_pivot_cols)
+    df = self._fill_missing_values_for_pivot_columns(values_fill,
+                                                     df,
+                                                     new_pivot_cols
+                                                     )
 
     # Unlist the pivot columns to scalar values if and only if:
     # 1. values_fn is None and values_fn is None
-    # 2. all the pivot columns are of type list/array and all the pivot_cols have values with a maximum length of 1.
+    # 2. all the pivot columns are of type list/array and all the pivot_cols
+    #    have values with a maximum length of 1.
     df = self._unlist_pivot_cols(values_fill, values_fn, df, new_pivot_cols)    
 
     # Replace empty lists or sets with None
     for col in new_pivot_cols:
-        col_dtype = df.select(col).dtypes[0][1]
-        if col_dtype.startswith('array') or col_dtype.startswith('map'):
-            df = df.withColumn(col, F.when(F.size(col) > 0, F.col(col)).otherwise(None))
+      col_dtype = df.select(col).dtypes[0][1]
+      if col_dtype.startswith('array') or col_dtype.startswith('map'):
+        df = df.withColumn(col,
+                           F.when(F.size(col) > 0,
+                                  F.col(col)
+                                  ).otherwise(None)
+                           )
 
     # Rename the pivot columns in case names_prefix is passed explicitly.
     if names_prefix is not None and  names_prefix != "":
-        df = df.select([F.col(col).alias(names_prefix + sep + col) \
-                        if col in new_pivot_cols else col for col in df.columns])
-
+      select_expr = ([F.col(col).alias(names_prefix + sep + col) 
+                      if col in new_pivot_cols
+                      else col 
+                      for col in df.columns
+                      ])
+      df = df.select(select_expr)
     return df
 
   def pivot_longer(self, 
@@ -2527,7 +2623,7 @@ class acc_on_pyspark():
       If True, cols are used to melt. Else, cols are considered as 'id'
       columns and the leftover columns are melted.
     values_drop_na: bool (default: False)
-          Whether to drop the rows corresponding to missing value in the result
+      Whether to drop the rows corresponding to missing value in the result
 
     Returns
     -------
@@ -2557,44 +2653,48 @@ class acc_on_pyspark():
     df.pivot_longer(cols = ['bill_length_mm',
                             'bill_depth_mm'],
                     values_drop_na = True
-                    )         
-              
+                    )            
     '''
     # assertions
     cn = self.colnames
     cols = self._validate_column_names(cols)
 
     assert isinstance(include, bool),\
-        "arg 'include' should be a bool"
+      "arg 'include' should be a bool"
     if not include:
-        cols = list(setlist(cn).difference(cols))
-        assert len(cols) > 0,\
-            "At least one column should be selected for melt"
+      cols = list(setlist(cn).difference(cols))
+      assert len(cols) > 0,\
+        "At least one column should be selected for melt"
     
     id_vars = set(cn).difference(cols)
     assert isinstance(names_to, str),\
-        "arg 'names_to' should be a string"
+      "arg 'names_to' should be a string"
     assert isinstance(values_to, str),\
-        "arg 'values_to' should be a string"
+      "arg 'values_to' should be a string"
     assert names_to not in id_vars,\
-        "arg 'names_to' should not match a id column"
+      "arg 'names_to' should not match a id column"
     assert values_to not in id_vars,\
-        "arg 'values_to' should not match a id column"
+      "arg 'values_to' should not match a id column"
     assert isinstance(values_drop_na, bool),\
-        "arg 'values_drop_na' should be a bool"
+      "arg 'values_drop_na' should be a bool"
 
     # Bulding the pyspark expression for melt.
-    # Sample pyspark expression: stack(3, 'bill_length_mm', `bill_length_mm`, 'bill_depth_mm', `bill_depth_mm`,
-    #                            'flipper_length_mm', `flipper_length_mm`) as (`name`, `value`)
+    # Sample pyspark expression: stack(3,
+    #                                 'bill_length_mm', `bill_length_mm`,
+    #                                 'bill_depth_mm', `bill_depth_mm`,
+    #                                 'flipper_length_mm', `flipper_length_mm`
+    #                                 ) as (`name`, `value`)
+    
     melt_cols = ', '.join([f"'{col}', `{col}`" for col in cols])
-    melt_expr = f"stack({len(cols)}, {melt_cols}) as (`{names_to}`, `{values_to}`)"
+    melt_expr = (f"stack({len(cols)}, {melt_cols}) as (`{names_to}`, "
+                 f"`{values_to}`)")
   
     # Melt/ pivot_longer core logic.
     res = self.__data.select(*id_vars, F.expr(melt_expr))
 
     # Drop rows with null values in the values_to column
     if values_drop_na:
-        res = res.filter(F.col(values_to).isNotNull())
+      res = res.filter(F.col(values_to).isNotNull())
 
     return res
   
@@ -2603,55 +2703,74 @@ class acc_on_pyspark():
     if values_fn is None:
       
       # Since values_fn is None, we do a just a simple collect_list.
-      # e.g. [Column<'collect_list(dept) AS dept'>, Column<'collect_list(dept2) AS dept2'>] 
+      # e.g. [Column<'collect_list(dept) AS dept'>,
+      #       Column<'collect_list(dept2) AS dept2'>] 
       # for values_from = ['dept', 'dept2'] and values_fn = None
-      values_from_pyspark_expr = [F.collect_list(F.col(vf)).alias(vf) for vf in values_from]
+      values_from_pyspark_expr = ([F.collect_list(F.col(vf)).alias(vf) 
+                                   for vf in values_from]
+                                  )
     elif isinstance(values_fn, str):
       
-      # Apply the function name passed in values_fn to each column in values_from.
-      # e.g [Column<'sum(salary) AS salary'>, Column<'sum(salary2) AS salary2'>] 
+      # Apply the function name passed in values_fn to each column in
+      # values_from.
+      # e.g [Column<'sum(salary) AS salary'>,
+      #      Column<'sum(salary2) AS salary2'>] 
       # for values_from = ['salary', 'salary2'] and values_fn = 'sum'
-      values_from_pyspark_expr = [eval(f"{values_fn}(F.col('{vf}')).alias('{vf}')") for vf in values_from]
+      values_from_pyspark_expr = (
+        [eval(f"{values_fn}(F.col('{vf}')).alias('{vf}')")
+         for vf in values_from
+         ])
     elif isinstance(values_fn, dict):
-      
       values_from_pyspark_expr = []
       for vf in values_from:
-        # If the column name is not present in the dictionary, we do a simple collect_list.
+        # If the column name is not present in the dictionary, 
+        # we do a simple collect_list.
         # Else, we use the function name passed in the dictionary.
-        # e.g. [Column<'collect_list(dept) AS dept'>, Column<'sum(salary) AS salary'>] 
-        # for values_from = ['dept', 'salary'] and values_fn = {'salary': 'sum'}
+        # e.g. [Column<'collect_list(dept) AS dept'>,
+        #       Column<'sum(salary) AS salary'>] 
+        # for values_from = ['dept', 'salary'] and 
+        #     values_fn = {'salary': 'sum'}
         func_expr = values_fn.get(vf, 'F.collect_list')
-        values_from_pyspark_expr.append(eval(f"{func_expr}(F.col('{vf}')).alias('{vf}')"))
+        values_from_pyspark_expr.append(
+          eval(f"{func_expr}(F.col('{vf}')).alias('{vf}')"))
 
     return values_from_pyspark_expr
   
-  def _get_pivot_columns(self, names_from, sep, names_expand, df, names_from_pyspark_expr):
+  def _get_pivot_columns(self, names_from, sep, names_expand, df,
+                         names_from_pyspark_expr):
       
-    # when names_expand is True, all unique combinations of names_from columns are taken
+    # when names_expand is True, all unique combinations of names_from 
+    # columns are taken
     # even if they are not present in the original dataframe
     if names_expand:
       # cartesian product of names_from
       cartesian_product_names_from_df = df.select(names_from[0]).distinct()
       if len(names_from) > 1:
-          for i in range(1, len(names_from)):
-              cartesian_product_names_from_df = cartesian_product_names_from_df.crossJoin(
-                df.select(names_from[i]).distinct()
-                )
+        for i in range(1, len(names_from)):
+          distinct_values_df = df.select(names_from[i]).distinct()
+          cartesian_product_names_from_df = (
+            cartesian_product_names_from_df.crossJoin(distinct_values_df)
+            )
     
       # Construct the pivot_col from names_from
-      cartesian_product_names_from_df = (cartesian_product_names_from_df.withColumn('pivot_col',
-                                                                      F.concat_ws(sep, *names_from_pyspark_expr)
-                                                                                  )
-                                      )
+      cartesian_product_names_from_df = (
+        cartesian_product_names_from_df.withColumn(
+          'pivot_col',
+          F.concat_ws(sep, *names_from_pyspark_expr)
+          )
+        )
 
-      # Construct the unique combinations of names_from columns in a python list
+      # Construct the unique combinations of names_from columns in a 
+      # python list
       pivot_cols = [row.pivot_col for row in cartesian_product_names_from_df.select('pivot_col').collect()] 
     else:
       pivot_cols = [row.pivot_col for row in df.select('pivot_col').distinct().collect()]
       
     return pivot_cols
   
-  def _fill_missing_values_for_pivot_columns(self, values_fill, df, new_pivot_cols):
+  def _fill_missing_values_for_pivot_columns(self, values_fill,
+                                             df, new_pivot_cols
+                                             ):
       
     # values_fill = {'dept': 'fill', 'dept2': []}
     # Construct a dictionary to fill the null values in the pivot columns.
@@ -2659,36 +2778,37 @@ class acc_on_pyspark():
     new_values_fill = {}
 
     if values_fill is not None:
-        if isinstance(values_fill, dict):
-            
-            for col in values_fill:
-              # e.g cols_ending_with_col = ['jack_dept', 'jordan_dept'] for col = 'dept'
-                new_cols_ending_with_pivot_col = [c for c in new_pivot_cols if c.endswith('_' + col)]
-              # e.g new_values_fill['jack_dept'] = 'fill' for col = 'dept'
-                for new_col in new_cols_ending_with_pivot_col:
-                    missing_value_to_be_filled = values_fill[col]
-                    # Fill the null values in the pivot columns with the empty list.
-                    if isinstance(missing_value_to_be_filled, list):
-                      df = df.withColumn(new_col,
-                                        F.when(F.col(new_col).isNull(), F.array()).otherwise(F.col(new_col))
-                                        )
-                    elif np.isscalar(missing_value_to_be_filled):
-                      # Add the scaler value to the dictionary.
-                      new_values_fill[new_col] = values_fill[col]              
-        elif isinstance(values_fill, list):
-          
-          # Fill the null values in the pivot columns with the empty list.
-          for new_pivot_col in new_pivot_cols:
-            df = df.withColumn(new_pivot_col, 
-                               F.when(F.col(new_pivot_col).isNull(), F.array()).otherwise(F.col(new_pivot_col))
-                               )
-        elif np.isscalar(values_fill):
-          new_values_fill = {col: values_fill for col in new_pivot_cols}
-       
-        # Fill the null values in the pivot columns with the new renamed dictinary.
-        df = df.na.fill(new_values_fill)
-      
-    return df
+      if isinstance(values_fill, dict):
+        for col in values_fill:
+          # e.g cols_ending_with_col = ['jack_dept', 'jordan_dept']
+          # for col = 'dept'
+          new_cols_ending_with_pivot_col = ([c for c in new_pivot_cols
+                                             if c.endswith('_' + col)])
+          # e.g new_values_fill['jack_dept'] = 'fill' for col = 'dept'
+          for new_col in new_cols_ending_with_pivot_col:
+            missing_value_to_be_filled = values_fill[col]
+            # Fill the null values in the pivot columns with the empty list.
+            if isinstance(missing_value_to_be_filled, list):
+              df = df.withColumn(new_col,
+                                F.when(F.col(new_col).isNull(), F.array()).otherwise(F.col(new_col))
+                                )
+            elif np.isscalar(missing_value_to_be_filled):
+              # Add the scaler value to the dictionary.
+              new_values_fill[new_col] = values_fill[col]              
+      elif isinstance(values_fill, list):
+        
+        # Fill the null values in the pivot columns with the empty list.
+        for new_pivot_col in new_pivot_cols:
+          df = df.withColumn(new_pivot_col, 
+                             F.when(F.col(new_pivot_col).isNull(), F.array()).otherwise(F.col(new_pivot_col))
+                             )
+      elif np.isscalar(values_fill):
+        new_values_fill = {col: values_fill for col in new_pivot_cols}
+     
+      # Fill the null values in the pivot columns with the new renamed dictinary.
+      df = df.na.fill(new_values_fill)
+    
+  return df
   
   def _unlist_pivot_cols(self, values_fill, values_fn, df, new_pivot_cols):
       
