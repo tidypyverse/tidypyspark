@@ -1517,8 +1517,6 @@ def test_to(penguins_data):
   
   spark.stop()
 
-
-
 def test_glimpse(penguins_data):
   from pyspark.sql import SparkSession 
   import pyspark.sql.functions as F 

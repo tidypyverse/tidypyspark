@@ -2762,9 +2762,15 @@ class acc_on_pyspark():
 
       # Construct the unique combinations of names_from columns in a 
       # python list
-      pivot_cols = [row.pivot_col for row in cartesian_product_names_from_df.select('pivot_col').collect()] 
+      pivot_cols = ([row.pivot_col 
+                     for row in cartesian_product_names_from_df
+                                .select('pivot_col').
+                                collect()]
+      )
     else:
-      pivot_cols = [row.pivot_col for row in df.select('pivot_col').distinct().collect()]
+      pivot_cols = ([row.pivot_col 
+                     for row in df.select('pivot_col').distinct().collect()]
+      )    
       
     return pivot_cols
   
@@ -2790,7 +2796,9 @@ class acc_on_pyspark():
             # Fill the null values in the pivot columns with the empty list.
             if isinstance(missing_value_to_be_filled, list):
               df = df.withColumn(new_col,
-                                F.when(F.col(new_col).isNull(), F.array()).otherwise(F.col(new_col))
+                                F.when(F.col(new_col).isNull(), 
+                                       F.array()
+                                       ).otherwise(F.col(new_col))
                                 )
             elif np.isscalar(missing_value_to_be_filled):
               # Add the scaler value to the dictionary.
@@ -2800,15 +2808,18 @@ class acc_on_pyspark():
         # Fill the null values in the pivot columns with the empty list.
         for new_pivot_col in new_pivot_cols:
           df = df.withColumn(new_pivot_col, 
-                             F.when(F.col(new_pivot_col).isNull(), F.array()).otherwise(F.col(new_pivot_col))
+                             F.when(F.col(new_pivot_col).isNull(), 
+                                    F.array()
+                                    ).otherwise(F.col(new_pivot_col))
                              )
       elif np.isscalar(values_fill):
         new_values_fill = {col: values_fill for col in new_pivot_cols}
      
-      # Fill the null values in the pivot columns with the new renamed dictinary.
+      # Fill the null values in the pivot columns 
+      # with the new renamed dictinary.
       df = df.na.fill(new_values_fill)
     
-  return df
+    return df
   
   def _unlist_pivot_cols(self, values_fill, values_fn, df, new_pivot_cols):
       
@@ -2816,16 +2827,19 @@ class acc_on_pyspark():
       # Get the data types of the pivot columns.
       col_dtypes = [df.select(col).dtypes[0][1] for col in new_pivot_cols]
 
-      # If all the pivot columns are of type array, then proceed to convert them to scalars 
+      # If all the pivot columns are of type array, 
+      # then proceed to convert them to scalars 
       # if subsequent conditions are met.
       if all([dtype.startswith('array') for dtype in col_dtypes]):
-      # Check if all the pivot columns of type array have a maximum of only one element.
+        # Check if all the pivot columns of type array 
+        # have a maximum of only one element.
         is_column_scalar = [(df.select(pivot_col)
                               .filter(~F.isnull(pivot_col))
                               .filter(F.size(pivot_col) > 1)
                               .count()
                             ) == 0 for pivot_col in new_pivot_cols]
-        # If all the pivot columns of type array have a maximum of only one element, unlist them.
+        # If all the pivot columns of type array have a maximum of 
+        # only one element, unlist them.
         if all(is_column_scalar):
           for pivot_col in new_pivot_cols:
             df = df.withColumn(pivot_col, F.col(pivot_col).getItem(0))
