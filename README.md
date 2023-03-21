@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 [![PyPI
 version](https://badge.fury.io/py/tidypyspark.svg)](https://badge.fury.io/py/tidypyspark)
 
