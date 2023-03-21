@@ -4,17 +4,18 @@ import tidypyspark.tidypyspark_class as ts
 from tidypyspark._unexported_utils import _is_perfect_sublist
 
 '''
-import tidypyspark.tidypyspark_class as ts
+from tidypyspark import ts
 from pyspark.sql import SparkSession 
 import pyspark.sql.functions as F 
 spark = SparkSession.builder.getOrCreate()
 import pyspark
-pen = spark.read.csv('src/tidypyspark/data/pen.csv', header = True).drop("_c0")
+from tidypyspark.datasets import get_penguins_path
+pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
 '''
 
 @pytest.fixture
 def penguins_data():
-    return str(get_penguins_path())
+  return str(get_penguins_path())
 
 def test_mutate(penguins_data):
   
@@ -23,7 +24,7 @@ def test_mutate(penguins_data):
   spark = SparkSession.builder.getOrCreate()
   import pyspark
   
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   res = (pen.ts.mutate({'bl_+_1': F.col('bill_length_mm') + 1,
                         'bl_+_1_by_2': F.col('bl_+_1') / 2}
                        )
@@ -39,7 +40,7 @@ def test_rename(penguins_data):
     import pyspark.sql.functions as F
     spark = SparkSession.builder.getOrCreate()
     import pyspark
-    pen = spark.read.csv(penguins_data, header=True).drop("_c0")
+    pen = spark.read.csv(penguins_data, header=True, inferSchema = True)
     res = pen.ts.rename({'species': 'species_2'})
     cns = res.ts.colnames
     assert isinstance(res, pyspark.sql.dataframe.DataFrame)
@@ -52,25 +53,31 @@ def test_relocate(penguins_data):
     import pyspark.sql.functions as F
     spark = SparkSession.builder.getOrCreate()
     import pyspark
-    pen = spark.read.csv(penguins_data, header=True).drop("_c0")
+    pen = spark.read.csv(penguins_data, header=True, inferSchema = True)
 
     #testing after clause
     res = pen.ts.relocate(["island", "species"], after = "year")
     cns = res.ts.colnames
-    assert isinstance(res, pyspark.sql.dataframe.DataFrame), "before clause failed 1"
-    assert _is_perfect_sublist(["year", "island", "species"],  cns), "after clause failed 2"
+    assert isinstance(res, pyspark.sql.dataframe.DataFrame),\
+      "before clause failed 1"
+    assert _is_perfect_sublist(["year", "island", "species"],  cns),\
+    "after clause failed 2"
 
     #testing before clause
     res = pen.ts.relocate(["island", "species"], before = "year")
     cns = res.ts.colnames
-    assert isinstance(res, pyspark.sql.dataframe.DataFrame), "before clause failed 1"
-    assert _is_perfect_sublist(["island", "species","year"],  cns), "before clause failed 2"
+    assert isinstance(res, pyspark.sql.dataframe.DataFrame),\
+      "before clause failed 1"
+    assert _is_perfect_sublist(["island", "species","year"], cns),\
+      "before clause failed 2"
 
     #testing without before-after clause
     res = pen.ts.relocate(["bill_length_mm","bill_depth_mm"])
     cns = res.ts.colnames
-    assert isinstance(res, pyspark.sql.dataframe.DataFrame), "without before-after clause failed 1"
-    assert _is_perfect_sublist(["bill_length_mm","bill_depth_mm", "species"],  cns), "without before-after clause failed 2"
+    assert isinstance(res, pyspark.sql.dataframe.DataFrame),\
+      "without before-after clause failed 1"
+    assert _is_perfect_sublist(["bill_length_mm","bill_depth_mm", "species"],  cns),\
+      "without before-after clause failed 2"
     spark.stop()
 
 def test_summarise(penguins_data):
@@ -80,7 +87,7 @@ def test_summarise(penguins_data):
   spark = SparkSession.builder.getOrCreate()
   import pyspark
   
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   res = (pen.ts.mutate({'bl_+_1': F.col('bill_length_mm') + 1,
                         'bl_+_1_by_2': F.col('bl_+_1') / 2}
                        )
@@ -123,7 +130,7 @@ def test_count(penguins_data):
   spark = SparkSession.builder.getOrCreate()
   import pyspark
   
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   res = (pen.ts.mutate({'bl_+_1': F.col('bill_length_mm') + 1,
                         'bl_+_1_by_2': F.col('bl_+_1') / 2}
                        )
@@ -978,7 +985,7 @@ def test_pipe_tee(penguins_data):
   spark = SparkSession.builder.getOrCreate()
   import pyspark
   
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   res = pen.ts.pipe_tee(
     lambda x: x.select(['species', 'bill_length_mm']).show(6)
     )
@@ -993,7 +1000,7 @@ def test_slice(penguins_data):
   spark = SparkSession.builder.getOrCreate()
   import pyspark
   
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   
   # min ----------------------------------------------------------------------
   # with ties check
@@ -1053,7 +1060,7 @@ def test_rbind(penguins_data):
   spark = SparkSession.builder.getOrCreate()
   import pyspark
   
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   
   df1 = pen.select(['species', 'island', 'bill_length_mm'])
   df2 = pen.select(['species', 'island', 'bill_depth_mm'])
@@ -1075,7 +1082,7 @@ def test_union(penguins_data):
   spark = SparkSession.builder.getOrCreate()
   import pyspark
   
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   
   df1 = pen.ts.slice_max(n = 2,
                          order_by_column = 'bill_length_mm',
@@ -1372,7 +1379,7 @@ def test_nest_by(penguins_data):
   import pyspark.sql.functions as F 
   spark = SparkSession.builder.getOrCreate()
   import pyspark
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   
   res = pen.ts.nest_by(by = ['species', 'island'])
   assert isinstance(res, pyspark.sql.dataframe.DataFrame)
@@ -1386,7 +1393,7 @@ def test_unnest_wider(penguins_data):
   import pyspark.sql.functions as F 
   spark = SparkSession.builder.getOrCreate()
   import pyspark
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   
   res = (pen.ts.nest_by(by = ['species', 'island'])
             .withColumn('data_exploded', F.explode('data'))
@@ -1403,9 +1410,10 @@ def test_unnest_longer(penguins_data):
   import pyspark.sql.functions as F 
   spark = SparkSession.builder.getOrCreate()
   import pyspark
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   
-  res = (pen.ts.nest_by(by = ['species', 'island'])
+  res = (pen.select(['species', 'island', 'bill_length_mm', 'bill_depth_mm'])
+            .ts.nest_by(by = ['species', 'island'])
             .withColumn('data_exploded', F.explode('data'))
             .drop('data')
             .ts.unnest_longer('data_exploded')
@@ -1422,7 +1430,7 @@ def test_unnest(penguins_data):
   import pyspark.sql.functions as F 
   spark = SparkSession.builder.getOrCreate()
   import pyspark
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   
   # unnest check on nested structs
   res  = pen.ts.nest_by(by = ['species', 'island'])
@@ -1501,7 +1509,7 @@ def test_to(penguins_data):
   import pyspark.sql.functions as F 
   spark = SparkSession.builder.getOrCreate()
   import pyspark
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   
   res = pen.ts.to_list('species')
   assert isinstance(res, list)
@@ -1522,7 +1530,7 @@ def test_glimpse(penguins_data):
   import pyspark.sql.functions as F 
   spark = SparkSession.builder.getOrCreate()
   import pyspark
-  pen = spark.read.csv(penguins_data, header = True).drop("_c0")
+  pen = spark.read.csv(penguins_data, header = True, inferSchema = True)
   assert pen.ts.glimpse() == None, "Got error in glimpse"
 
 

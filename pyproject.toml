@@ -16,6 +16,12 @@ pandas = "^1.0.0"
 [tool.poetry.dev-dependencies]
 pytest = "^7.2.1"
 
+[tool.poetry.group.dev.dependencies]
+sphinx = "~5.0.0"
+myst-nb = "^0.17.1"
+sphinx-autoapi = "^2.0.1"
+sphinx-rtd-theme = "^1.2.0"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

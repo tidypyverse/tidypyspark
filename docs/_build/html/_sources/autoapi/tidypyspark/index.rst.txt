@@ -1,0 +1,34 @@
+:py:mod:`tidypyspark`
+=====================
+
+.. py:module:: tidypyspark
+
+
+Subpackages
+-----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 3
+
+   data/index.rst
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   _unexported_utils/index.rst
+   accessor_class/index.rst
+   datasets/index.rst
+   tidypyspark_class/index.rst
+
+
+Package Contents
+----------------
+
+.. py:data:: __version__
+
+   
+

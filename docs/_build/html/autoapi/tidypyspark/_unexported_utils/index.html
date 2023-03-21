@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tidypyspark._unexported_utils &mdash; tidypyspark  documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="tidypyspark.accessor_class" href="../accessor_class/index.html" />
+    <link rel="prev" title="tidypyspark.data" href="../data/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            tidypyspark
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tidypyspark</span></code></a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../index.html#subpackages">Subpackages</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tidypyspark._unexported_utils</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../accessor_class/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tidypyspark.accessor_class</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../datasets/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tidypyspark.datasets</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../tidypyspark_class/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tidypyspark.tidypyspark_class</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../index.html#package-contents">Package Contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">tidypyspark</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tidypyspark</span></code></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tidypyspark._unexported_utils</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/autoapi/tidypyspark/_unexported_utils/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-tidypyspark._unexported_utils">
+<span id="tidypyspark-unexported-utils"></span><h1><a class="reference internal" href="#module-tidypyspark._unexported_utils" title="tidypyspark._unexported_utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tidypyspark._unexported_utils</span></code></a><a class="headerlink" href="#module-tidypyspark._unexported_utils" title="Permalink to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading"></a></h2>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#tidypyspark._unexported_utils._is_kwargable" title="tidypyspark._unexported_utils._is_kwargable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_is_kwargable</span></code></a>(func)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#tidypyspark._unexported_utils._is_valid_colname" title="tidypyspark._unexported_utils._is_valid_colname"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_is_valid_colname</span></code></a>(string)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#tidypyspark._unexported_utils._is_string_or_string_list" title="tidypyspark._unexported_utils._is_string_or_string_list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_is_string_or_string_list</span></code></a>(x)</p></td>
+<td><p>_is_string_or_string_list(x)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#tidypyspark._unexported_utils._enlist" title="tidypyspark._unexported_utils._enlist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_enlist</span></code></a>(x)</p></td>
+<td><p>_enlist(x)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#tidypyspark._unexported_utils._get_unique_names" title="tidypyspark._unexported_utils._get_unique_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_unique_names</span></code></a>(strings)</p></td>
+<td><p>_get_unique_names(strings)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#tidypyspark._unexported_utils._is_unique_list" title="tidypyspark._unexported_utils._is_unique_list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_is_unique_list</span></code></a>(x)</p></td>
+<td><p>_is_unique_list(x)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#tidypyspark._unexported_utils._generate_new_string" title="tidypyspark._unexported_utils._generate_new_string"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_generate_new_string</span></code></a>(strings)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#tidypyspark._unexported_utils._is_nested" title="tidypyspark._unexported_utils._is_nested"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_is_nested</span></code></a>(x)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#tidypyspark._unexported_utils._flatten_strings" title="tidypyspark._unexported_utils._flatten_strings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_flatten_strings</span></code></a>(x)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#tidypyspark._unexported_utils._nested_is_unique" title="tidypyspark._unexported_utils._nested_is_unique"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_nested_is_unique</span></code></a>(x)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#tidypyspark._unexported_utils._is_perfect_sublist" title="tidypyspark._unexported_utils._is_perfect_sublist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_is_perfect_sublist</span></code></a>(subset_list, full_list)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#tidypyspark._unexported_utils._get_compatible_datatypes_of_python_and_spark" title="tidypyspark._unexported_utils._get_compatible_datatypes_of_python_and_spark"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_compatible_datatypes_of_python_and_spark</span></code></a>()</p></td>
+<td><p>get_compatible_datatypes_of_python_and_spark()</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="tidypyspark._unexported_utils._is_kwargable">
+<span class="sig-prename descclassname"><span class="pre">tidypyspark._unexported_utils.</span></span><span class="sig-name descname"><span class="pre">_is_kwargable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/tidypyspark/_unexported_utils.html#_is_kwargable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tidypyspark._unexported_utils._is_kwargable" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tidypyspark._unexported_utils._is_valid_colname">
+<span class="sig-prename descclassname"><span class="pre">tidypyspark._unexported_utils.</span></span><span class="sig-name descname"><span class="pre">_is_valid_colname</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/tidypyspark/_unexported_utils.html#_is_valid_colname"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tidypyspark._unexported_utils._is_valid_colname" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tidypyspark._unexported_utils._is_string_or_string_list">
+<span class="sig-prename descclassname"><span class="pre">tidypyspark._unexported_utils.</span></span><span class="sig-name descname"><span class="pre">_is_string_or_string_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/tidypyspark/_unexported_utils.html#_is_string_or_string_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tidypyspark._unexported_utils._is_string_or_string_list" title="Permalink to this definition"></a></dt>
+<dd><p>_is_string_or_string_list(x)</p>
+<p>Check whether the input is a string or a list of strings</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>object</em>) – Any python object</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>bool</em></p></li>
+<li><p><em>True if input is a string or a list of strings</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">_is_string_or_string_list</span><span class="p">(</span><span class="s2">&quot;bar&quot;</span><span class="p">)</span>      <span class="c1"># True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_is_string_or_string_list</span><span class="p">([</span><span class="s2">&quot;bar&quot;</span><span class="p">])</span>    <span class="c1"># True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_is_string_or_string_list</span><span class="p">((</span><span class="s2">&quot;bar&quot;</span><span class="p">,))</span>   <span class="c1"># False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_is_string_or_string_list</span><span class="p">([</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="c1"># False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tidypyspark._unexported_utils._enlist">
+<span class="sig-prename descclassname"><span class="pre">tidypyspark._unexported_utils.</span></span><span class="sig-name descname"><span class="pre">_enlist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/tidypyspark/_unexported_utils.html#_enlist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tidypyspark._unexported_utils._enlist" title="Permalink to this definition"></a></dt>
+<dd><p>_enlist(x)</p>
+<p>Returns the input in a list (as first element of the list) unless input itself is a list</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>object</em>) – Any python object</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>list</em></p></li>
+<li><p><em>Returns the input in a list (as first element of the list) unless input itself is a list</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">_enlist</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">])</span> <span class="c1"># [&quot;a&quot;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_enlist</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)</span>   <span class="c1"># [&quot;a&quot;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_enlist</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="p">))</span> <span class="c1"># [(1, )]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tidypyspark._unexported_utils._get_unique_names">
+<span class="sig-prename descclassname"><span class="pre">tidypyspark._unexported_utils.</span></span><span class="sig-name descname"><span class="pre">_get_unique_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strings</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/tidypyspark/_unexported_utils.html#_get_unique_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tidypyspark._unexported_utils._get_unique_names" title="Permalink to this definition"></a></dt>
+<dd><p>_get_unique_names(strings)</p>
+<p>Returns a list of same length as the input such that elements are unique. This is done by adding ‘_1’. The resulting list does not alter nth element if the nth element occurs for the first time in the input list starting from left.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>strings</strong> (<em>list</em>) – A list of strings</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of strings</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">_get_unique_names</span><span class="p">([</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">])</span>               <span class="c1"># [&#39;a&#39;, &#39;b&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_get_unique_names</span><span class="p">([</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">])</span>               <span class="c1"># [&#39;a&#39;, &#39;a_1&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_get_unique_names</span><span class="p">([</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;a_1&#39;</span><span class="p">])</span>        <span class="c1"># [&#39;a&#39;, &#39;a_1_1&#39;, &#39;a_1&#39;]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tidypyspark._unexported_utils._is_unique_list">
+<span class="sig-prename descclassname"><span class="pre">tidypyspark._unexported_utils.</span></span><span class="sig-name descname"><span class="pre">_is_unique_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/tidypyspark/_unexported_utils.html#_is_unique_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tidypyspark._unexported_utils._is_unique_list" title="Permalink to this definition"></a></dt>
+<dd><p>_is_unique_list(x)</p>
+<p>Returns True if input list does not have duplicates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>list</em>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tidypyspark._unexported_utils._generate_new_string">
+<span class="sig-prename descclassname"><span class="pre">tidypyspark._unexported_utils.</span></span><span class="sig-name descname"><span class="pre">_generate_new_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strings</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/tidypyspark/_unexported_utils.html#_generate_new_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tidypyspark._unexported_utils._generate_new_string" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tidypyspark._unexported_utils._is_nested">
+<span class="sig-prename descclassname"><span class="pre">tidypyspark._unexported_utils.</span></span><span class="sig-name descname"><span class="pre">_is_nested</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/tidypyspark/_unexported_utils.html#_is_nested"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tidypyspark._unexported_utils._is_nested" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tidypyspark._unexported_utils._flatten_strings">
+<span class="sig-prename descclassname"><span class="pre">tidypyspark._unexported_utils.</span></span><span class="sig-name descname"><span class="pre">_flatten_strings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/tidypyspark/_unexported_utils.html#_flatten_strings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tidypyspark._unexported_utils._flatten_strings" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tidypyspark._unexported_utils._nested_is_unique">
+<span class="sig-prename descclassname"><span class="pre">tidypyspark._unexported_utils.</span></span><span class="sig-name descname"><span class="pre">_nested_is_unique</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/tidypyspark/_unexported_utils.html#_nested_is_unique"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tidypyspark._unexported_utils._nested_is_unique" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tidypyspark._unexported_utils._is_perfect_sublist">
+<span class="sig-prename descclassname"><span class="pre">tidypyspark._unexported_utils.</span></span><span class="sig-name descname"><span class="pre">_is_perfect_sublist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subset_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/tidypyspark/_unexported_utils.html#_is_perfect_sublist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tidypyspark._unexported_utils._is_perfect_sublist" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tidypyspark._unexported_utils._get_compatible_datatypes_of_python_and_spark">
+<span class="sig-prename descclassname"><span class="pre">tidypyspark._unexported_utils.</span></span><span class="sig-name descname"><span class="pre">_get_compatible_datatypes_of_python_and_spark</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/tidypyspark/_unexported_utils.html#_get_compatible_datatypes_of_python_and_spark"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tidypyspark._unexported_utils._get_compatible_datatypes_of_python_and_spark" title="Permalink to this definition"></a></dt>
+<dd><p>get_compatible_datatypes_of_python_and_spark()</p>
+<p>Returns a dictionary of data types that are compatible with both python
+and spark. The keys are the python data types and the values are the spark
+data types.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict&lt;string, set&gt;</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../data/index.html" class="btn btn-neutral float-left" title="tidypyspark.data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../accessor_class/index.html" class="btn btn-neutral float-right" title="tidypyspark.accessor_class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Srikanth Komala sheshachala.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

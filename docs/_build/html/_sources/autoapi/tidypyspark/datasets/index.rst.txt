@@ -1,0 +1,24 @@
+:py:mod:`tidypyspark.datasets`
+==============================
+
+.. py:module:: tidypyspark.datasets
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   tidypyspark.datasets.get_penguins_path
+
+
+
+.. py:function:: get_penguins_path()
+
+   get path to penguins csv in the package directory
+
+

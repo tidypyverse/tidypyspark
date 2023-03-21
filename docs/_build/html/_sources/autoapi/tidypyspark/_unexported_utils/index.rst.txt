@@ -1,0 +1,131 @@
+:py:mod:`tidypyspark._unexported_utils`
+=======================================
+
+.. py:module:: tidypyspark._unexported_utils
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   tidypyspark._unexported_utils._is_kwargable
+   tidypyspark._unexported_utils._is_valid_colname
+   tidypyspark._unexported_utils._is_string_or_string_list
+   tidypyspark._unexported_utils._enlist
+   tidypyspark._unexported_utils._get_unique_names
+   tidypyspark._unexported_utils._is_unique_list
+   tidypyspark._unexported_utils._generate_new_string
+   tidypyspark._unexported_utils._is_nested
+   tidypyspark._unexported_utils._flatten_strings
+   tidypyspark._unexported_utils._nested_is_unique
+   tidypyspark._unexported_utils._is_perfect_sublist
+   tidypyspark._unexported_utils._get_compatible_datatypes_of_python_and_spark
+
+
+
+.. py:function:: _is_kwargable(func)
+
+
+.. py:function:: _is_valid_colname(string)
+
+
+.. py:function:: _is_string_or_string_list(x)
+
+   _is_string_or_string_list(x)
+
+   Check whether the input is a string or a list of strings
+
+   :param x: Any python object
+   :type x: object
+
+   :returns: * *bool*
+             * *True if input is a string or a list of strings*
+
+   .. rubric:: Examples
+
+   >>> _is_string_or_string_list("bar")      # True
+   >>> _is_string_or_string_list(["bar"])    # True
+   >>> _is_string_or_string_list(("bar",))   # False
+   >>> _is_string_or_string_list(["bar", 1]) # False
+
+
+.. py:function:: _enlist(x)
+
+   _enlist(x)
+
+   Returns the input in a list (as first element of the list) unless input itself is a list
+
+   :param x: Any python object
+   :type x: object
+
+   :returns: * *list*
+             * *Returns the input in a list (as first element of the list) unless input itself is a list*
+
+   .. rubric:: Examples
+
+   >>> _enlist(["a"]) # ["a"]
+   >>> _enlist("a")   # ["a"]
+   >>> _enlist((1, )) # [(1, )]
+
+
+.. py:function:: _get_unique_names(strings)
+
+   _get_unique_names(strings)
+
+   Returns a list of same length as the input such that elements are unique. This is done by adding '_1'. The resulting list does not alter nth element if the nth element occurs for the first time in the input list starting from left.
+
+   :param strings: A list of strings
+   :type strings: list
+
+   :rtype: list of strings
+
+   .. rubric:: Examples
+
+   >>> _get_unique_names(['a', 'b'])               # ['a', 'b']
+   >>> _get_unique_names(['a', 'a'])               # ['a', 'a_1']
+   >>> _get_unique_names(['a', 'a', 'a_1'])        # ['a', 'a_1_1', 'a_1']
+
+
+.. py:function:: _is_unique_list(x)
+
+   _is_unique_list(x)
+
+   Returns True if input list does not have duplicates
+
+   :param x:
+   :type x: list
+
+   :rtype: bool
+
+
+.. py:function:: _generate_new_string(strings)
+
+
+.. py:function:: _is_nested(x)
+
+
+.. py:function:: _flatten_strings(x)
+
+
+.. py:function:: _nested_is_unique(x)
+
+
+.. py:function:: _is_perfect_sublist(subset_list, full_list)
+
+
+.. py:function:: _get_compatible_datatypes_of_python_and_spark()
+
+   get_compatible_datatypes_of_python_and_spark()
+
+   Returns a dictionary of data types that are compatible with both python
+   and spark. The keys are the python data types and the values are the spark
+   data types.
+
+   :rtype: dict<string, set>
+
+
