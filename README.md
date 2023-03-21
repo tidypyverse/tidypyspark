@@ -64,8 +64,8 @@ slice methods
 
 na methods
 ------------
-- [ ] drop_na (Ja)
-- [ ] replace_na (Ja)
+- [x] drop_na
+- [x] replace_na
 - [x] fill_na
 
 nest methods

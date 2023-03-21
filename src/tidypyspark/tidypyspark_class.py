@@ -23,7 +23,8 @@ from tidypyspark._unexported_utils import (
                               _generate_new_string,
                               _is_nested,
                               _flatten_strings,
-                              _nested_is_unique
+                              _nested_is_unique,
+                              _get_compatible_datatypes_of_python_and_spark
                             )
 
 # tidypyspark ----
@@ -1200,14 +1201,18 @@ class acc_on_pyspark():
     # Format - [('LH', 'dept'), ('LHS', 'dept'), ('RHS', 'age')]
     column_names_tuple_list = re.findall(pattern, sql_on)
 
-    # Generates a dictionary with LHS and RHS as keys and
-    # column names as values.
+    # Filtering tuples having only LHS or RHS as the first element of the tuple
+    filtered_tuples = ([(key, value) 
+                        for (key, value) in column_names_tuple_list 
+                        if key=='LHS' or key=='RHS']
+                      )
+
+    # Generates a dictionary with LHS and RHS as keys and column names as values.
     # e.g. {'RHS': ['id2', 'dept', 'age'], 'LHS': ['dept']}
-    dict_from_tuple = dict()
-    for tup in column_names_tuple_list.items():
-      if key=='LHS' or key=='RHS':
-        dict_from_tuple[tup[0]] = tup[1]
-    
+    dict_from_tuple = {key:[] for (key, _) in filtered_tuples}
+    for tpl in filtered_tuples:
+        dict_from_tuple[tpl[0]].append(tpl[1])
+
     return dict_from_tuple
   
   def _get_spark_df_by_removing_suffix(self, suffix, cols_LHS, cols_RHS, res):
@@ -3124,3 +3129,236 @@ class acc_on_pyspark():
   
   # alias for fill_na
   fill = fill_na
+
+  def drop_na(self, 
+              column_names = None, 
+              how = "any",
+              thresh = None
+              ):
+
+    '''
+    drop_na (alias: drop)
+    drop rows with null values
+
+    Parameters
+    ----------
+    how : string, optional
+      "any" or "all". The default is "any".
+      If 'any', drop a row if it contains any nulls. 
+      If 'all', drop a row only if all its values are null.
+
+    column_names : string or list of strings, optional
+      It specifies the columns to consider for null values. 
+      If a row has null values only in the specified columns, it will be dropped.
+
+    thresh : int, optional
+      Number of non-null values required to keep a row. The default is None.
+      This overrides how parameter.
+
+    Returns
+    -------
+    pyspark dataframe
+
+    Examples
+    --------
+    from pyspark.sql import SparkSession 
+    import pyspark.sql.functions as F 
+    spark = SparkSession.builder.getOrCreate()
+    import pyspark
+    
+    from pyspark.sql.functions import col
+
+    # create a DataFrame with null values
+    data = [("Alice", 25, None), ("Bob", None, 80), (None, 30, 90)]
+    df = spark.createDataFrame(data, ["name", "age", "score"])
+
+    # drop rows with null values
+    df1 = df.ts.drop_na()
+    # Output
+    # +----+---+-----+
+    # |name|age|score|
+    # +----+---+-----+
+    # +----+---+-----+
+
+    # drop rows with null values in a specific column
+    df2 = df.ts.drop_na(column_names = ["age"])
+    # Output
+    # +-----+---+-----+
+    # | name|age|score|
+    # +-----+---+-----+
+    # |Alice| 25| null|
+    # | null| 30|   90|
+    # +-----+---+-----+
+
+    # drop rows with null values if all values are null.
+    df3 = df.ts.drop_na(how = "all")
+    # Output
+    # +-----+----+-----+
+    # | name| age|score|
+    # +-----+----+-----+
+    # |Alice|  25| null|
+    # |  Bob|null|   80|
+    # | null|  30|   90|
+    # +-----+----+-----+
+
+    # drop rows with less than 3 non-null values
+    df4 = df.ts.drop_na(thresh=3)
+    # Output
+    # +----+---+-----+
+    # |name|age|score|
+    # +----+---+-----+
+    # +----+---+-----+
+
+    '''
+    assert how in ["any", "all"],\
+      "how should be one among 'any' or 'all'"
+    
+    assert thresh is None or isinstance(thresh, int),\
+      "thresh should be an integer if specified"
+    
+    if column_names is not None:
+      column_names = self._validate_column_names(column_names)
+
+    return self.__data.dropna(subset = column_names,
+                              how = how,
+                              thresh = thresh,
+                              )
+
+  # alias for drop_na
+  drop = drop_na
+
+  def replace_na(self,value):
+    '''
+    Replace missing values with a specified value.
+
+    Parameters
+    ----------
+    value: dict or a scalar or an empty list
+          When a dict, key should be a column name and value should be the
+          value to replace by missing values of the column
+          When a scalar or an empty list, 
+          missing values of all columns will be replaced with value. 
+          A scalar value could be a string, a numeric value(int, float), 
+          or a boolean value.
+
+    Returns
+    -------
+    pyspark dataframe
+
+    Examples
+    --------
+    from pyspark.sql import SparkSession 
+    import pyspark.sql.functions as F 
+    spark = SparkSession.builder.getOrCreate()
+    import pyspark
+
+    # create a DataFrame with null values
+    data = [("Alice", 25, None, [20, 30, 40]), 
+            ("Bob", None, 80, [10, 20, 30]), 
+            (None, 30, 90 , None)
+            ]
+    df = spark.createDataFrame(data, ["name", "age", "score", "marks"])
+    # +-----+----+-----+------------+
+    # | name| age|score|       marks|
+    # +-----+----+-----+------------+
+    # |Alice|  25| null|[20, 30, 40]|
+    # |  Bob|null|   80|[10, 20, 30]|
+    # | null|  30|   90|        null|
+    # +-----+----+-----+------------+
+
+    # replace null values with a dictionary of column names and values
+    df2 = df.ts.replace_na({"name": "A", "score": 25, "marks": []})
+    # Output
+    # +-----+----+-----+------------+
+    # | name| age|score|       marks|
+    # +-----+----+-----+------------+
+    # |Alice|  25|   25|[20, 30, 40]|
+    # |  Bob|null|   80|[10, 20, 30]|
+    # |    A|  30|   90|          []|
+    # +-----+----+-----+------------+
+    assert df2.select("name").collect()[2][0] == "A"
+    assert df2.select("marks").collect()[2][0] == []
+
+    '''
+
+    df = self.__data
+
+    # Get the datatypes of the columns in the dataframe.
+    df_dtypes = df.ts.types
+
+    self._validate_compatible_datatypes(value, df, df_dtypes)
+
+    # If replace_value is a scalar, then fillna with it.
+    if np.isscalar(value):
+      df = df.fillna(value, subset = df.columns)
+    
+    elif isinstance(value, dict):
+
+      for col_name, value in value.items():
+
+        # If the value is a list, then it should be an empty list.
+        if isinstance(value, list):
+          
+          # If the value is an empty list, then replace null values 
+          # with an empty array.
+          df = df.withColumn(col_name, 
+                             F.when(F.col(col_name).isNull(), F.array()
+                                   ).otherwise(F.col(col_name))
+                             )
+        elif np.isscalar(value):
+          df = df.fillna(value, subset = [col_name])
+
+    elif isinstance(value, list):
+      
+      for col in df.columns:
+        df = df.withColumn(col, 
+                           F.when(F.col(col).isNull(), F.array()
+                                 ).otherwise(F.col(col))
+                           )
+
+    return df
+
+  def _validate_compatible_datatypes(self, value, df, df_dtypes):
+      
+    # Get the compatible datatypes of python and spark.
+    datatype_dict = _get_compatible_datatypes_of_python_and_spark()
+    
+    if isinstance(value, dict):
+      _ = self._validate_column_names(list(value.keys()))
+    
+      for col_name, col_value in value.items():
+        col_dtype = type(col_value).__name__
+        assert df_dtypes[col_name] in datatype_dict[col_dtype],\
+          (f"replacement value for column '{col_name}' " 
+            f"should be of type '{df_dtypes[col_name]}' "
+          )
+      
+        if isinstance(col_value, list):
+          assert len(col_value) == 0,\
+        ("replacement value should be an empty list if a "
+         "list is passed as a value"
+        )
+
+    elif isinstance(value, list):
+      assert len(value) == 0,\
+      ("replacement value should be an empty list "
+       "if a list is passed as a value"
+      )
+
+      # Check if all the columns are of type array.
+      for col in df.columns:
+        assert df_dtypes[col] == "array",\
+        ("replacement value should be an empty list "
+         "if a list is passed as a value"
+        )
+
+    elif np.isscalar(value):
+      value_dtype = type(value).__name__
+      for col in df.columns:
+        assert df_dtypes[col] in datatype_dict[value_dtype],\
+        (f"replacement value for column '{col}' "
+         f"should be of type {df_dtypes[col]}"
+        )
+        
+    else:
+      assert False, "value should be a scalar, an empty list or a dictionary"

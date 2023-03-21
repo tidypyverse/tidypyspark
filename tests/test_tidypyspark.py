@@ -1525,3 +1525,102 @@ def test_glimpse(penguins_data):
   pen = spark.read.csv(penguins_data, header = True).drop("_c0")
   assert pen.ts.glimpse() == None, "Got error in glimpse"
 
+
+
+def test_drop_na():
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+  
+  from pyspark.sql.functions import col
+
+  # create a DataFrame with null values
+  data = [("Alice", 25, None), ("Bob", None, 80), (None, 30, 90)]
+  df = spark.createDataFrame(data, ["name", "age", "score"])
+  # +-----+----+-----+
+  # | name| age|score|
+  # +-----+----+-----+
+  # |Alice|  25| null|
+  # |  Bob|null|   80|
+  # | null|  30|   90|
+  # +-----+----+-----+
+
+  # drop rows with null values
+  df1 = df.ts.drop_na()
+  # Output
+  # +----+---+-----+
+  # |name|age|score|
+  # +----+---+-----+
+  # +----+---+-----+
+  assert df1.count() == 0
+
+  # drop rows with null values in a specific column
+  df2 = df.ts.drop_na(column_names = ["age"])
+  # Output
+  # +-----+---+-----+
+  # | name|age|score|
+  # +-----+---+-----+
+  # |Alice| 25| null|
+  # | null| 30|   90|
+  # +-----+---+-----+
+  assert df2.count() == 2
+
+  # drop rows with null values if all values are null.
+  df3 = df.ts.drop_na(how = "all")
+  # Output
+  # +-----+----+-----+
+  # | name| age|score|
+  # +-----+----+-----+
+  # |Alice|  25| null|
+  # |  Bob|null|   80|
+  # | null|  30|   90|
+  # +-----+----+-----+
+  assert df3.count() == 3
+
+  # drop rows with less than 3 non-null values
+  df4 = df.ts.drop_na(thresh=3)
+  # Output
+  # +----+---+-----+
+  # |name|age|score|
+  # +----+---+-----+
+  # +----+---+-----+
+  assert df4.count() == 0
+  
+  spark.stop()
+
+def test_replace_na():
+
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pyspark
+
+  # create a DataFrame with null values
+  data = [("Alice", 25, None, [20, 30, 40]), 
+          ("Bob", None, 80, [10, 20, 30]), 
+          (None, 30, 90 , None)
+          ]
+  df = spark.createDataFrame(data, ["name", "age", "score", "marks"])
+  # +-----+----+-----+------------+
+  # | name| age|score|       marks|
+  # +-----+----+-----+------------+
+  # |Alice|  25| null|[20, 30, 40]|
+  # |  Bob|null|   80|[10, 20, 30]|
+  # | null|  30|   90|        null|
+  # +-----+----+-----+------------+
+
+  # replace null values with a dictionary of column names and values
+  df2 = df.ts.replace_na({"name": "A", "score": 25, "marks": []})
+  # Output
+  # +-----+----+-----+------------+
+  # | name| age|score|       marks|
+  # +-----+----+-----+------------+
+  # |Alice|  25|   25|[20, 30, 40]|
+  # |  Bob|null|   80|[10, 20, 30]|
+  # |    A|  30|   90|          []|
+  # +-----+----+-----+------------+
+  assert df2.select("name").collect()[2][0] == "A"
+  assert df2.select("marks").collect()[2][0] == []
+
+  spark.stop()
