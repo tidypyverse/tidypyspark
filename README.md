@@ -1,26 +1,17 @@
-[![PyPI
-version](https://badge.fury.io/py/tidypyspark.svg)](https://badge.fury.io/py/tidypyspark)
+[![PyPI version](https://badge.fury.io/py/tidypyspark.svg)](https://badge.fury.io/py/tidypyspark)
 
 # `tidypyspark`
 
-> Make [pyspark](https://pypi.org/project/pyspark/) sing
-> [dplyr](https://dplyr.tidyverse.org/)
+> Make [pyspark](https://pypi.org/project/pyspark/) sing [dplyr](https://dplyr.tidyverse.org/)
 
-> Inspired by [sparklyr](https://spark.rstudio.com/),
-> [tidyverse](https://tidyverse.tidyverse.org/)
+> Inspired by [sparklyr](https://spark.rstudio.com/), [tidyverse](https://tidyverse.tidyverse.org/)
 
-`tidypyspark` python package provides *minimal, pythonic* wrapper around
-pyspark sql dataframe API in
-[tidyverse](https://tidyverse.tidyverse.org/) flavor.
+`tidypyspark` python package provides *minimal, pythonic* wrapper around pyspark sql dataframe API in [tidyverse](https://tidyverse.tidyverse.org/) flavor.
 
--   With accessor `ts`, apply `tidypyspark` methods where both input and
-    output are mostly pyspark dataframes.
+-   With accessor `ts`, apply `tidypyspark` methods where both input and output are mostly pyspark dataframes.
 -   Consistent 'verbs' (`select`, `arrange`, `distinct`, ...)
 
-Also see [`tidypandas`](https://pypi.org/project/tidypandas/): A
-**grammar of data manipulation** for
-[pandas](https://pandas.pydata.org/docs/index.html) inspired by
-[tidyverse](https://tidyverse.tidyverse.org/)
+Also see [`tidypandas`](https://pypi.org/project/tidypandas/): A **grammar of data manipulation** for [pandas](https://pandas.pydata.org/docs/index.html) inspired by [tidyverse](https://tidyverse.tidyverse.org/)
 
 ## Usage
 
@@ -82,8 +73,7 @@ Also see [`tidypandas`](https://pypi.org/project/tidypandas/): A
                  '''
     pen.select('species', F.expr(stack_expr)).show(5)
 
-> `tidypyspark` relies on the amazing `pyspark` library and spark
-> ecosystem.
+> `tidypyspark` relies on the amazing `pyspark` library and spark ecosystem.
 
 ## Installation
 
@@ -91,3 +81,4 @@ Also see [`tidypandas`](https://pypi.org/project/tidypandas/): A
 
 -   On github: <https://github.com/talegari/tidypyspark>
 -   On pypi: <https://pypi.org/project/tidypyspark>
+-   website: <https://talegari.github.io/tidypyspark/>
