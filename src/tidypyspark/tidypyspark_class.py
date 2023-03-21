@@ -348,10 +348,9 @@ class acc_on_pyspark():
     w, h = get_terminal_size()
 
     # get row and column count
-    nrow = self.__data.count()
     ncol = len(self.__data.columns)
 
-    res = [f'Rows: {nrow}', f'Columns: {ncol}']
+    res = [f'Columns: {ncol}']
 
     col_strs = []
     names = []
@@ -382,7 +381,7 @@ class acc_on_pyspark():
             vals = vals.round(float_vals_precision)
         val_str = ", ".join(list(map(str, vals)))
 
-        if len(val_str) > w-2-n_ljust-t_ljust or nrow > n_rows:
+        if len(val_str) > w-2-n_ljust-t_ljust:
             val_str = val_str[0:(w-2-n_ljust-t_ljust)-3] + "..."
         res_str = f'{name.ljust(n_ljust)} {dtype.ljust(t_ljust)} {val_str}'
         res.append(res_str)
