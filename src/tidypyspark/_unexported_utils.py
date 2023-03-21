@@ -209,3 +209,22 @@ def _is_perfect_sublist(subset_list, full_list):
                 return False
         return True
     return False
+
+def _get_compatible_datatypes_of_python_and_spark():
+
+    '''
+    get_compatible_datatypes_of_python_and_spark()
+    
+    Returns a dictionary of data types that are compatible with both python and spark. The keys are the python data types and the values are the spark data types.
+    
+    Returns
+    -------
+    dict<string, set>
+    '''
+    return {
+        "str": set(["string"]),
+        "int": set(["integer", "long"]),
+        "float": set(["double", "float"]),
+        "bool": set(["boolean"]),
+        "list": set(["array"])
+    }

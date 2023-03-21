@@ -1529,6 +1529,13 @@ def test_drop_na():
   # create a DataFrame with null values
   data = [("Alice", 25, None), ("Bob", None, 80), (None, 30, 90)]
   df = spark.createDataFrame(data, ["name", "age", "score"])
+  # +-----+----+-----+
+  # | name| age|score|
+  # +-----+----+-----+
+  # |Alice|  25| null|
+  # |  Bob|null|   80|
+  # | null|  30|   90|
+  # +-----+----+-----+
 
   # drop rows with null values
   df1 = df.ts.drop_na()
@@ -1540,7 +1547,7 @@ def test_drop_na():
   assert df1.count() == 0
 
   # drop rows with null values in a specific column
-  df2 = df.ts.drop_na(subset = ["age"])
+  df2 = df.ts.drop_na(column_names = ["age"])
   # Output
   # +-----+---+-----+
   # | name|age|score|
@@ -1595,7 +1602,7 @@ def test_replace_na():
   # +-----+----+-----+------------+
 
   # replace null values with a scalar value
-  df1 = df.ts.replace_na(0)
+  df1 = df.ts.replace_na("A")
   # Output
   # +-----+---+-----+------------+
   # | name|age|score|       marks|
@@ -1621,7 +1628,7 @@ def test_replace_na():
   assert df2.select("marks").collect()[2][0] == []
 
   # replace null values in a specific column. Note we have used an empty list in the dictionary for column "marks"
-  df3 = df.ts.replace_na({"age": True, "marks": []}, subset=["age", "score", "marks"])
+  df3 = df.ts.replace_na({"age": True, "marks": []})
   # +-----+---+-----+------------+
   # | name|age|score|       marks|
   # +-----+---+-----+------------+
@@ -1634,7 +1641,7 @@ def test_replace_na():
 
   # replace null values in all columns with an empty list. 
   # This replaces null values in all columns of type array<> with an empty list
-  df4 = df.ts.replace_na([], subset = None)
+  df4 = df.ts.replace_na([])
   # +-----+----+-----+------------+
   # | name| age|score|       marks|
   # +-----+----+-----+------------+

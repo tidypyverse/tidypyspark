@@ -23,7 +23,8 @@ from tidypyspark._unexported_utils import (
                               _generate_new_string,
                               _is_nested,
                               _flatten_strings,
-                              _nested_is_unique
+                              _nested_is_unique,
+                              _get_compatible_datatypes_of_python_and_spark
                             )
 
 # tidypyspark ----
@@ -2884,8 +2885,8 @@ class acc_on_pyspark():
   fill = fill_na
 
   def drop_na(self, 
+              column_names = None, 
               how = "any",
-              subset = None, 
               thresh = None
               ):
 
@@ -2900,7 +2901,7 @@ class acc_on_pyspark():
       If 'any', drop a row if it contains any nulls. 
       If 'all', drop a row only if all its values are null.
 
-    subset : string or list of strings, optional
+    column_names : string or list of strings, optional
       It specifies the columns to consider for null values. 
       If a row has null values only in the specified columns, it will be dropped.
 
@@ -2934,7 +2935,7 @@ class acc_on_pyspark():
     # +----+---+-----+
 
     # drop rows with null values in a specific column
-    df2 = df.ts.drop_na(subset = ["age"])
+    df2 = df.ts.drop_na(column_names = ["age"])
     # Output
     # +-----+---+-----+
     # | name|age|score|
@@ -2969,10 +2970,10 @@ class acc_on_pyspark():
     assert thresh is None or isinstance(thresh, int),\
       "thresh should be an integer if specified"
     
-    if subset is not None:
-      subset = self._clean_column_names(subset)
+    if column_names is not None:
+      column_names = self._clean_column_names(column_names)
 
-    return self.__data.dropna(subset = subset,
+    return self.__data.dropna(column_names = column_names,
                               how = how,
                               thresh = thresh,
                               )
@@ -2980,27 +2981,17 @@ class acc_on_pyspark():
   # alias for drop_na
   drop = drop_na
 
-  def replace_na(self, 
-                 replace_value,
-                 subset = None,
-                 ):
+  def replace_na(self,value):
     '''
-    replace null values with specified values
+    Replace missing values with a specified value.
 
     Parameters
     ----------
-    replace_value : int, float, string, bool, dict or empty list
-      Value to replace null values with. 
-      If the value is a dict, then subset is ignored and value must be a mapping
-      from column name (string) to replacement value.
-      The replacement value must be an int, float, boolean, string or an empty list.
-
-    subset : string or list of strings, optional
-      optional list of column names to consider. 
-      Columns specified in subset that do not have matching data type or cannot be typecast 
-      to the data type of value are ignored. 
-      For example, if value is a string, and subset contains a non-string column, 
-      then the non-string column is simply ignored.
+    value: dict or a scalar or an empty list
+          When a dict, key should be a column name and value should be the
+          value to replace by missing values of the column
+          When a scalar or an empty list, missing values of all columns will be replaced with
+          value. A scalar value could be a string, a numeric value(int, float), or a boolean value.
 
     Returns
     -------
@@ -3073,63 +3064,72 @@ class acc_on_pyspark():
     '''
 
     df = self.__data
-    
-    if isinstance(replace_value, dict):
-      _ = self._clean_column_names(list(replace_value.keys()))
-    elif isinstance(replace_value, list):
-      assert len(replace_value) == 0,\
-        "replace_value should be an empty list if a list is specified in replace_value"
-      
-    if subset is not None:
-      subset = self._clean_column_names(subset)
-    
-    # If replace_value is a scalar, then fillna with it.
-    if np.isscalar(replace_value):
-      df = df.fillna(replace_value, subset = subset)
-    
-    elif isinstance(replace_value, dict):
 
-      # List to maintain the replacement values that are of list type.
-      list_col_types = []
-      for col_name, value in replace_value.items():
+    # Get the datatypes of the columns in the dataframe.
+    df_dtypes = df.ts.types
+
+    self._validate_compatible_datatypes(value, df, df_dtypes)
+
+    # If replace_value is a scalar, then fillna with it.
+    if np.isscalar(value):
+      df = df.fillna(value, subset = df.columns)
+    
+    elif isinstance(value, dict):
+
+      for col_name, value in value.items():
 
         # If the value is a list, then it should be an empty list.
         if isinstance(value, list):
           
-          assert len(value) == 0,\
-            "replace_value should be an empty list if a list is specified as one of the replacement values"
-          
           # If the value is an empty list, then replace null values with an empty array.
           df = df.withColumn(col_name, 
-                             F.when(F.col(col_name).isNull(), F.array()).otherwise(F.col(col_name))
+                             F.when(F.col(col_name).isNull(), F.array()
+                                   ).otherwise(F.col(col_name))
                              )
-          # Add the column name to the list_col_types list.
-          list_col_types.append(col_name)
+        elif np.isscalar(value):
+          df = df.fillna(value, subset = [col_name])
 
-      # Remove the columns that are of list type from the replace_value dict.
-      for col_name in list_col_types:
-        replace_value.pop(col_name)
-
-      # If there are any columns left in the replace_value dict, then fillna with them.
-      if len(replace_value) > 0:
-        df = df.fillna(replace_value, subset = None)
-
-    elif isinstance(replace_value, list):
+    elif isinstance(value, list):
       
-      # Get the columns that are of list type so that they can be replaced with an empty array.
-      if subset is None:
-        cols = df.columns
-      else:
-        cols = subset
-
-      # Get the columns that are of list type from the dataframe.
-      col_dtypes = df.ts.types
-      list_cols = [col_name for col_name, dtype in col_dtypes.items() if dtype == "array"]
-
-      # Replace null values with an empty array for the columns that are of list type.
-      for col_name in list_cols:
-        df = df.withColumn(col_name, 
-                           F.when(F.col(col_name).isNull(), F.array()).otherwise(F.col(col_name))
+      for col in df.columns:
+        df = df.withColumn(col, 
+                           F.when(F.col(col).isNull(), F.array()
+                                 ).otherwise(F.col(col))
                            )
-    
+
     return df
+
+  def _validate_compatible_datatypes(self, value, df, df_dtypes):
+      
+    # Get the compatible datatypes of python and spark.
+    datatype_dict = _get_compatible_datatypes_of_python_and_spark()
+    
+    if isinstance(value, dict):
+      _ = self._clean_column_names(list(value.keys()))
+    
+      for col_name, col_value in value.items():
+        col_dtype = type(col_value).__name__
+        assert df_dtypes[col_name] in datatype_dict[col_dtype],\
+          f"replacement value for column '{col_name}' should be of type {df_dtypes[col_name]}"
+      
+        if isinstance(col_value, list):
+          assert len(col_value) == 0,\
+        "replacement value should be an empty list if a list is passed as a value"
+
+    elif isinstance(value, list):
+      assert len(value) == 0,\
+    "replacement value should be an empty list if a list is passed as a value"
+
+      # Check if all the columns are of type array.
+      for col in df.columns:
+        assert df_dtypes[col] == "array",\
+        f"replacement value should be an empty list if a list is passed as a value"
+
+    elif np.isscalar(value):
+      value_dtype = type(value).__name__
+      for col in df.columns:
+        assert df_dtypes[col] in datatype_dict[value_dtype],\
+        f"replacement value for column '{col_name}' should be of type {df_dtypes[col_name]}"
+        
+    else:
+      assert False, "value should be a scalar, an empty list or a dictionary"
