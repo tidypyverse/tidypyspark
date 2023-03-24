@@ -1,0 +1,61 @@
+:py:mod:`tidypyspark.accessor_class`
+====================================
+
+.. py:module:: tidypyspark.accessor_class
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   tidypyspark.accessor_class.CachedAccessor
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   tidypyspark.accessor_class._register_accessor
+   tidypyspark.accessor_class.register_dataframe_accessor
+   tidypyspark.accessor_class.register_dataframe_method
+
+
+
+.. py:class:: CachedAccessor(name, accessor)
+
+   Custom property-like object (descriptor) for caching accessors.
+
+   :param name: The namespace this will be accessed under, e.g. ``df.foo``
+   :type name: str
+   :param accessor: The class with the extension methods.
+   :type accessor: cls
+
+   .. note:: Modified based on pandas.core.accessor.
+
+   .. py:method:: __get__(obj, cls)
+
+
+
+.. py:function:: _register_accessor(name, cls)
+
+   .. note:: Modified based on pandas.core.accessor.
+
+
+.. py:function:: register_dataframe_accessor(name)
+
+   .. note:: Modified based on pandas.core.accessor.
+
+
+.. py:function:: register_dataframe_method(method)
+
+   Register a function as a method attached to the Pyspark DataFrame.
+
+   .. note:: Modified based on pandas_flavor.register.
+
+

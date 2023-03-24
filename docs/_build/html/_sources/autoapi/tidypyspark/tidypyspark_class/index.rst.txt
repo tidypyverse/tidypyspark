@@ -1,0 +1,1606 @@
+:py:mod:`tidypyspark.tidypyspark_class`
+=======================================
+
+.. py:module:: tidypyspark.tidypyspark_class
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   tidypyspark.tidypyspark_class.acc_on_pyspark
+
+
+
+
+.. py:class:: acc_on_pyspark(data)
+
+   
+
+
+   .. py:property:: nrow
+
+      nrow
+      get munber of rows
+
+      .. rubric:: Notes
+
+      Just a placeholder to inform user to use count() method
+
+      :rtype: None
+
+   .. py:property:: ncol
+
+      ncol
+      get number of columns
+
+      :rtype: (Integer) Number of columns
+
+   .. py:property:: colnames
+
+      dim
+      get column names
+
+      :rtype: list with column names as strings
+
+   .. py:property:: shape
+
+      shape
+      get shape
+
+      :rtype: tuple of number of rows and number of columns
+
+   .. py:property:: dim
+
+      dim
+      get shape
+
+      :rtype: tuple of number of rows and number of columns
+
+   .. py:property:: types
+
+      types
+      identify column types as strings
+
+      :returns: * *dict with column names as keys, types as a values*
+                * *type is a string.*
+
+   .. py:attribute:: rowid_to_column
+
+      
+
+   .. py:attribute:: to_series
+
+      
+
+   .. py:attribute:: collect
+
+      
+
+   .. py:attribute:: summarize
+
+      
+
+   .. py:attribute:: outer_join
+
+      
+
+   .. py:attribute:: bind_rows
+
+      
+
+   .. py:attribute:: nest
+
+      
+
+   .. py:attribute:: fill
+
+      
+
+   .. py:attribute:: drop
+
+      
+
+   .. py:method:: _validate_by(by)
+
+      _validate_by
+      validates 'by' and returns a list of column names
+
+      :param by:
+      :type by: string, list of strings
+
+      :rtype: list of column names
+
+
+   .. py:method:: _validate_order_by(order_by)
+
+      _validate_order_by
+      validates and returns a list of 'column' objects
+
+      :param order_by: Order by specification, see Notes
+      :type order_by: string or tuple or list of tuples
+
+      :rtype: list of 'column' objects
+
+      .. rubric:: Notes
+
+      1. A 'column' object is an instance of 'pyspark.sql.Column'.
+      2. Prototype of return objects:
+        - ["col_a", ("col_b", "desc")] --> [col('col_a'), col('col_b').desc()]
+
+
+   .. py:method:: _validate_column_names(column_names)
+
+      _validate_column_names
+      validates and returns column names
+
+      :param column_names: columns names to be validated
+      :type column_names: string or list of strings
+
+      :rtype: list of column names
+
+
+   .. py:method:: _extract_order_by_cols(order_by)
+
+      _extract_order_by_cols
+      Extract column names from order_by specification
+
+      :param order_by: Order by specification
+                       ex: ["col_a", ("col_b", "desc")]
+      :type order_by: string or tuple or list of tuples
+
+      :rtype: list of column names in order_by
+
+
+   .. py:method:: _create_windowspec(**kwargs)
+
+      _create_windowspec
+      Create Window object using relevant kwargs
+
+      :param \*\*kwargs: Supports these: by, order_by, range_between, rows_between.
+
+      :rtype: an instance of pyspark.sql.window.WindowSpec
+
+      .. rubric:: Notes
+
+      _create_windowspec does not validates inputs
+
+
+   .. py:method:: glimpse(n_rows=100, n_columns=100)
+
+      glimpse
+
+      This function prints the first 100(default) rows of the dataset, along with
+      the number of rows and columns in the dataset and the data types of each
+      column. It also displays the values of each column, limited to the first
+      100 (default) values. If the number of rows exceeds 100, then the values are
+      truncated accordingly.
+
+      :param n_columns:
+      :type n_columns: maximum number of columns to be handled
+      :param n_rows:
+      :type n_rows: maximum number of rows to show
+
+      :rtype: None
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> pen.ts.glimpse()
+
+
+   .. py:method:: add_row_number(order_by, name='row_number', by=None)
+
+      add_row_number
+      Adds a column indicating row number optionally per group
+
+      :param order_by: How to order before assigning row numbers.
+      :type order_by: order by specification
+      :param name: Name of the new column. The default is "row_number".
+      :type name: string, optional
+      :param by: Column names to group by. The default is None.
+      :type by: string or list of strings, optional
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> pen.ts.add_row_number('bill_length_mm').show(10)
+      >>> (pen.ts.add_row_number('bill_length_mm', by='species')
+      >>>     .filter(F.col('row_number') <= 2)
+      >>>     .show(10))
+
+
+   .. py:method:: add_group_number(by, name='group_number')
+
+      add_group_number
+      Adds group number per group
+
+      :param by: Column names to group by
+      :type by: string or list of strings
+      :param name: Name of the new column to be created. The default is "group_number".
+      :type name: string, optional
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> (pen.ts.add_row_number('species', by = 'species')
+      >>>     .filter(F.col('row_number') <= 2)
+      >>>     .drop('row_number')
+      >>>     .ts.add_group_number('species', name = 'gn')
+      >>>     .show(10)
+      >>>     )
+
+
+   .. py:method:: to_list(column_name)
+
+      to_list
+      collect a column as python list
+
+      :param column_name: Name of the column to be collected.
+      :type column_name: str
+
+      :rtype: list
+
+
+   .. py:method:: pull(column_name)
+
+      pull
+      collect a column as pandas series
+
+      :param column_name: Name of the column to be collected.
+      :type column_name: str
+
+      :rtype: pandas series
+
+
+   .. py:method:: to_dict()
+
+      to_dict
+      collect as a dict where keys are column names and
+      values are lists
+
+      :rtype: dict
+
+      .. rubric:: Notes
+
+      Each column is pulled separately to reduce the load on the executor.
+
+
+   .. py:method:: to_pandas()
+
+      to_pandas
+      collect as a pandas dataframe
+
+      :rtype: pandas dataframe
+
+
+   .. py:method:: select(column_names, include: bool = True)
+
+      select
+      Subset some columns
+
+      :param column_names: Names of the columns to be selected when 'include' is True
+      :type column_names: (list of strings or a string)
+      :param include: flag to indicate whether 'column_names' should be selected or removed
+      :type include: (flag, default = True)
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> pen.ts.select('species').show(10)
+      >>> pen.ts.select(['species', 'island']).show(10)
+      >>> pen.ts.select(['species', 'island'], include = False).show(10)
+
+
+   .. py:method:: arrange(order_by)
+
+      arrange
+      Arrange rows
+
+      :param order_by: Order by specification
+      :type order_by: string or tuple or list of tuples
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Notes
+
+      1. 'arrange' is not memory efficient as it brings all data
+         to a single executor.
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> pen.ts.arrange('bill_depth_mm').show(10)
+      >>> pen.ts.arrange(['bill_depth_mm', ('bill_length_mm', 'desc')]).show(10)
+
+
+   .. py:method:: distinct(column_names=None, order_by=None, keep_all=False)
+
+      distinct
+      Keep only distinct combinations of columns
+
+      :param column_names: Column names to identify distinct rows.
+                           The default is None. All columns are considered.
+      :type column_names: string or a list of strings, optional
+      :param order_by: Columns to order by to know which rows to retain. The default is None.
+      :type order_by: order_by specification, optional
+      :param keep_all: Whether to keep all the columns. The default is False.
+      :type keep_all: bool, optional
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> pen.ts.distinct('island').show(10)
+      >>> pen.ts.distinct(['species', 'island']).show(10)
+      >>> pen.ts.distinct(['species', 'island'], keep_all = True).show(10)
+
+
+   .. py:method:: rename(old_new_dict)
+
+      rename
+      Rename columns
+
+      :param old_new_dict: A dict with old names as keys and new names as values
+      :type old_new_dict: dict
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> pen.ts.rename({'species': 'species_2', "year":"year_2})
+
+
+   .. py:method:: relocate(column_names, before=None, after=None)
+
+      relocate
+      Relocate the columns
+
+      :param column_names: column names to be moved
+      :type column_names: string or a list of strings
+      :param before: column before which the column_names are to be moved.
+                     The default is None.
+      :type before: string, optional
+      :param after: column after which the column_names are to be moved.
+                    The default is None.
+      :type after: string, optional
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Notes
+
+      Only one among 'before' and 'after' can be not None. When both are None,
+      the columns are added to the beginning of the dataframe (leftmost)
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> # move "island" and "species" columns to the left of the dataframe
+      >>> pen.ts.relocate(["island", "species"])
+      >>> # move "sex" and "year" columns to the left of "island" column
+      >>> pen.ts.relocate(["sex", "year"], before = "island")
+      >>> # move "island" and "species" columns to the right of "year" column
+      >>> pen.ts.relocate(["island", "species"], after = "year")
+
+
+   .. py:method:: mutate(dictionary, window_spec=None, **kwargs)
+
+      mutate
+      Create new column or modify existing columns
+
+      :param dictionary: key should be new/existing column name.
+                         Value should is pyspark expression that should evaluate to a column
+      :type dictionary: dict
+      :param window_spec: The default is None.
+      :type window_spec: pyspark.sql.window.WindowSpec, optional
+      :param \*\*kwargs:
+      :type \*\*kwargs: Supports these: by, order_by, range_between, rows_between.
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> (pen.ts.mutate({'bl_+_1': F.col('bill_length_mm') + 1,
+      >>>                  'bl_+_1_by_2': F.col('bl_+_1') / 2})
+      >>>     .show(10)
+      >>>     )
+      >>> # grouped and order mutate operation
+      >>> (pen.ts.add_row_number(order_by = 'bill_depth_mm')
+      >>>     .ts.mutate({'cumsum_bl': F.sum('bill_length_mm')},
+      >>>                by = 'species',
+      >>>                order_by = ['bill_depth_mm', 'row_number'],
+      >>>                range_between = (-float('inf'), 0)
+      >>>                )
+      >>>     .ts.select(['bill_length_mm',
+      >>>                 'species',
+      >>>                 'bill_depth_mm',
+      >>>                 'cumsum_bl'
+      >>>                 ])
+      >>>     .show(10)
+      >>>     )
+
+
+   .. py:method:: summarise(dictionary, by=None)
+
+      summarise
+      Create aggregate columns
+
+      :param dictionary: key should be column name.
+                         Value should is pyspark expression that should produce a single
+                         aggregation value
+      :type dictionary: dict
+      :param by: Column names to group by
+      :type by: string or list of strings
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> # ungrouped summarise
+      >>> (pen.ts.summarise({'mean_bl': F.mean(F.col('bill_length_mm')),
+      >>>                    'count_species': F.count(F.col('species'))
+      >>>                   }
+      >>>                  )
+      >>>     .show(10)
+      >>>     )
+      >>>
+      >>> # grouped summarise
+      >>> (pen.ts.summarise({'mean_bl': F.mean(F.col('bill_length_mm')),
+      >>>                    'count_species': F.count(F.col('species'))
+      >>>                   },
+      >>>                   by = 'island'
+      >>>                  )
+      >>>     .show(10)
+      >>>     )
+
+
+   .. py:method:: filter(condition)
+
+      filter
+      subset rows using some condition
+
+      :param condition: Column of types.BooleanType or a string of SQL expression.
+      :type condition: pyspark column or string
+
+      :rtype: pyspark dataframe
+
+
+   .. py:method:: _validate_join(pyspark_df, on, on_x, on_y, sql_on, suffix, how)
+
+
+   .. py:method:: _execute_on_command_for_join(on, suffix, how, LHS, RHS)
+
+
+   .. py:method:: _execute_sql_on_command_for_join(sql_on, suffix, how, LHS, RHS)
+
+
+   .. py:method:: _execute_on_x_on_y_command_for_join(on_x, on_y, suffix, how, LHS, RHS)
+
+
+   .. py:method:: _get_sql_on_statement_with_suffix(sql_on, suffix, column_names_tuple_list)
+
+
+   .. py:method:: _extract_cols_from_sql_on_command(sql_on)
+
+
+   .. py:method:: _get_spark_df_by_removing_suffix(suffix, cols_LHS, cols_RHS, res)
+
+
+   .. py:method:: _execute_cross_join(pyspark_df, suffix)
+
+
+   .. py:method:: join(pyspark_df, on=None, on_x=None, on_y=None, sql_on=None, suffix=['', '_y'], how='inner')
+
+      Joins columns of y to self
+
+      :param pyspark_df (pyspark.sql.DataFrame):
+      :param on: Common column names to match
+      :type on: string or a list of strings
+      :param on_x: Column names of self to be matched with arg 'on_y'
+      :type on_x: string or a list of strings
+      :param on_y: Column names of y to be matched with arg 'on_x'
+      :type on_y: string or a list of strings
+      :param sql_on: SQL expression used to join both DataFrames.
+                     Recommended for inequality joins.
+                     The left table has to be specified as 'LHS' and the right table as 'RHS'.
+                     e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+      :type sql_on: string
+      :param suffix: suffix to append the columns of left and right in order to create
+                     unique names after the join
+      :type suffix: list of two strings
+      :param how: Type of join to be performed. Default is 'inner'.
+                  Supports: 'inner', 'left', 'right', 'outer', 'full', 'cross',
+                            'semi', 'anti'
+      :type how: string
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> df1 = spark.createDataFrame([
+          (1, "jordan", 'DS'),
+          (2, "jack", 'DS'),
+          (1, "jack", 'SDE'),
+          (2, "jack", 'SDE'),
+          (1, "jack", 'PM'),
+          (2, "jack", 'PM')
+          ],
+          ("id", "name", "dept")
+      )
+
+      >>> df2 = spark.createDataFrame([
+          (2, "SDE", 20),
+          (1, "SDE", 10),
+          (2, "PM", 30),
+          (2, "BA", 40),
+          ],
+        ("id", "dept", "age")
+      )
+
+      >>> df1.ts.join(df2, on = ['id', 'dept'], how = 'inner).show()
+      +---+----+----+---+
+      | id|dept|name|age|
+      +---+----+----+---+
+      |  1| SDE|jack| 20|
+      |  2|  PM|jack| 30|
+      |  2| SDE|jack| 10|
+      +---+----+----+---+
+
+      >>> (df1.ts.join(df2,
+      >>>        sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) &
+      >>>        (RHS.age < 30)', how = 'inner).show())
+      +---+----+----+----+------+---+
+      | id|name|dept|id_y|dept_y|age|
+      +---+----+----+----+------+---+
+      |  1|jack| SDE|   1|   SDE| 20|
+      |  2|jack| SDE|   2|   SDE| 10|
+      +---+----+----+----+------+---+
+
+
+   .. py:method:: left_join(pyspark_df, on=None, on_x=None, on_y=None, sql_on=None, suffix=['', '_y'])
+
+      Joins columns of the given pyspark_df to self by matching rows.
+      Includes all keys from self.
+
+      :param pyspark_df (pyspark.sql.DataFrame):
+      :param on: Common column names to match
+      :type on: string or a list of strings
+      :param on_x: Column names of self to be matched with arg 'on_y'
+      :type on_x: string or a list of strings
+      :param on_y: Column names of y to be matched with arg 'on_x'
+      :type on_y: string or a list of strings
+      :param sql_on: SQL expression used to join both DataFrames.
+                     Recommended for inequality joins.
+                     The left table has to be specified as 'LHS' and the right table as 'RHS'.
+                     e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+      :type sql_on: string
+      :param suffix: suffix to append the columns of left and right in order to create
+                     unique names after the join
+      :type suffix: list of two strings
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      # Create the DataFrames
+      >>> df1 = spark.createDataFrame([
+          (1, "jordan", 'DS'),
+          (2, "jack", 'DS'),
+          (1, "jack", 'SDE'),
+          (2, "jack", 'SDE'),
+          (1, "jack", 'PM'),
+          (2, "jack", 'PM')
+          ],
+          ("id", "name", "dept")
+      )
+
+      >>> df2 = spark.createDataFrame([
+          (2, "SDE", 20),
+          (1, "SDE", 10),
+          (2, "PM", 30),
+          (2, "BA", 40),
+          ],
+        ("id", "dept", "age")
+      )
+
+      >>> df1.ts.left_join(df2, on = ["id", "dept"]).show()
+      +---+-----+----+---+---+
+      | id|dept|  name| age|
+      +---+----+------+----+
+      |  1|  DS|jordan|null|
+      |  2|  DS|  jack|null|
+      |  1| SDE|  jack|  10|
+      |  2| SDE|  jack|  20|
+      |  1|  PM|  jack|null|
+      |  2|  PM|  jack|  30|
+      +---+----+------+----+
+
+      >>> (df1.ts.left_join(df2, sql_on = '(LHS.id == RHS.id) &
+      >>>                   (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
+      +---+------+----+----+------+----+
+      | id|  name|dept|id_y|dept_y| age|
+      +---+------+----+----+------+----+
+      |  1|jordan|  DS|null|  null|null|
+      |  2|  jack|  DS|null|  null|null|
+      |  1|  jack| SDE|   1|   SDE|  20|
+      |  2|  jack| SDE|   2|   SDE|  10|
+      |  1|  jack|  PM|null|  null|null|
+      |  2|  jack|  PM|null|  null|null|
+      +---+------+----+----+------+----+
+
+      >>> df1.ts.left_join(df2, on_x = ['name'], on_y = ['dept']).show()
+      +---+------+----+----+------+----+
+      | id|  name|dept|id_y|dept_y| age|
+      +---+------+----+----+------+----+
+      |  1|jordan|  DS|null|  null|null|
+      |  2|  jack|  DS|null|  null|null|
+      |  1|  jack| SDE|null|  null|null|
+      |  2|  jack| SDE|null|  null|null|
+      |  1|  jack|  PM|null|  null|null|
+      |  2|  jack|  PM|null|  null|null|
+      +---+------+----+----+------+----+
+
+
+   .. py:method:: right_join(pyspark_df, on=None, on_x=None, on_y=None, sql_on=None, suffix=['', '_y'])
+
+      Joins columns of pyspark_df to self by matching rows
+      Includes all keys in pyspark_df
+
+      :param pyspark_df (pyspark.sql.DataFrame):
+      :param on: Common column names to match
+      :type on: string or a list of strings
+      :param on_x: Column names of self to be matched with arg 'on_y'
+      :type on_x: string or a list of strings
+      :param on_y: Column names of y to be matched with arg 'on_x'
+      :type on_y: string or a list of strings
+      :param sql_on: SQL expression used to join both DataFrames.
+                     Recommended for inequality joins.
+                     The left table has to be specified as 'LHS' and the right table as 'RHS'.
+                     e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+      :type sql_on: string
+      :param suffix: suffix to append the columns of left and right in order to create
+                     unique names after the join
+      :type suffix: list of two strings
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> df1 = spark.createDataFrame([
+          (1, "jordan", 'DS'),
+          (2, "jack", 'DS'),
+          (1, "jack", 'SDE'),
+          (2, "jack", 'SDE'),
+          (1, "jack", 'PM'),
+          (2, "jack", 'PM')
+          ],
+          ("id", "name", "dept")
+      )
+
+      >>> df2 = spark.createDataFrame([
+          (2, "SDE", 20),
+          (1, "SDE", 10),
+          (2, "PM", 30),
+          (2, "BA", 40),
+          ],
+        ("id", "dept", "age")
+      )
+
+      >>> df1.ts.right_join(df2, on = ["id", "dept"]).show()
+      +---+----+----+---+
+      | id|dept|name|age|
+      +---+----+----+---+
+      |  2| SDE|jack| 10|
+      |  1| SDE|jack| 20|
+      |  2|  PM|jack| 30|
+      |  2|  BA|null| 40|
+      +---+----+----+---+
+
+      >>> (df1.ts.right_join(df2, sql_on = '(LHS.id == RHS.id) &
+      >>>                    (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
+      +----+----+----+----+------+---+
+      |  id|name|dept|id_y|dept_y|age|
+      +----+----+----+----+------+---+
+      |   2|jack| SDE|   2|   SDE| 10|
+      |   1|jack| SDE|   1|   SDE| 20|
+      |null|null|null|   2|    PM| 30|
+      |null|null|null|   2|    BA| 40|
+      +----+----+----+----+------+---+
+
+      >>> df1.ts.right_join(df2, on_x = ['id', 'dept'], on_y = ['age', 'dept']).show()
+      # +----+----+----+----+------+---+
+      # |  id|name|dept|id_y|dept_y|age|
+      # +----+----+----+----+------+---+
+      # |null|null|null|   2|   SDE| 10|
+      # |null|null|null|   1|   SDE| 20|
+      # |null|null|null|   2|    PM| 30|
+      # |null|null|null|   2|    BA| 40|
+      # +----+----+----+----+------+---+
+
+
+   .. py:method:: inner_join(pyspark_df, on=None, on_x=None, on_y=None, sql_on=None, suffix=['', '_y'])
+
+      Joins columns of pyspark_df to self by matching rows
+      Includes only matching keys in pyspark_df and self
+
+      :param pyspark_df (pyspark.sql.DataFrame):
+      :param on: Common column names to match
+      :type on: string or a list of strings
+      :param on_x: Column names of self to be matched with arg 'on_y'
+      :type on_x: string or a list of strings
+      :param on_y: Column names of y to be matched with arg 'on_x'
+      :type on_y: string or a list of strings
+      :param sql_on: SQL expression used to join both DataFrames.
+                     Recommended for inequality joins.
+                     The left table has to be specified as 'LHS' and the right table as 'RHS'.
+                     e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+      :type sql_on: string
+      :param suffix: suffix to append the columns of left and right in order to create
+                     unique names after the join
+      :type suffix: list of two strings
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> df1 = spark.createDataFrame([
+          (1, "jordan", 'DS'),
+          (2, "jack", 'DS'),
+          (1, "jack", 'SDE'),
+          (2, "jack", 'SDE'),
+          (1, "jack", 'PM'),
+          (2, "jack", 'PM')
+          ],
+          ("id", "name", "dept")
+      )
+
+      >>> df2 = spark.createDataFrame([
+          (2, "SDE", 20),
+          (1, "SDE", 10),
+          (2, "PM", 30),
+          (2, "BA", 40),
+          ],
+        ("id", "dept", "age")
+      )
+
+      >>> df1.ts.inner_join(df2, on = ["id", "dept"]).show()
+      +---+----+----+---+
+      | id|dept|name|age|
+      +---+----+----+---+
+      |  1| SDE|jack| 20|
+      |  2|  PM|jack| 30|
+      |  2| SDE|jack| 10|
+      +---+----+----+---+
+
+      >>> (df1.ts.inner_join(df2, sql_on = '(LHS.id == RHS.id) &
+      >>>                    (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
+      +---+----+----+----+------+---+
+      | id|name|dept|id_y|dept_y|age|
+      +---+----+----+----+------+---+
+      |  1|jack| SDE|   1|   SDE| 20|
+      |  2|jack| SDE|   2|   SDE| 10|
+      +---+----+----+----+------+---+
+
+
+   .. py:method:: full_join(pyspark_df, on=None, on_x=None, on_y=None, sql_on=None, suffix=['', '_y'])
+
+      Joins columns of pyspark_df to self by matching rows
+      Includes all keys from both pyspark_df and self
+
+      :param pyspark_df (pyspark.sql.DataFrame):
+      :param on: Common column names to match
+      :type on: string or a list of strings
+      :param on_x: Column names of self to be matched with arg 'on_y'
+      :type on_x: string or a list of strings
+      :param on_y: Column names of y to be matched with arg 'on_x'
+      :type on_y: string or a list of strings
+      :param sql_on: SQL expression used to join both DataFrames.
+                     Recommended for inequality joins.
+                     The left table has to be specified as 'LHS' and the right table as 'RHS'.
+                     e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+      :type sql_on: string
+      :param suffix: suffix to append the columns of left and right in order to create
+                     unique names after the join
+      :type suffix: list of two strings
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> df1 = spark.createDataFrame([
+          (1, "jordan", 'DS'),
+          (2, "jack", 'DS'),
+          (1, "jack", 'SDE'),
+          (2, "jack", 'SDE'),
+          (1, "jack", 'PM'),
+          (2, "jack", 'PM')
+          ],
+          ("id", "name", "dept")
+      )
+
+      >>> df2 = spark.createDataFrame([
+          (2, "SDE", 20),
+          (1, "SDE", 10),
+          (2, "PM", 30),
+          (2, "BA", 40),
+          ],
+        ("id", "dept", "age")
+      )
+
+      >>> df1.ts.full_join(df2, on = ["id", "dept"]).show()
+      +---+----+------+----+
+      | id|dept|  name| age|
+      +---+----+------+----+
+      |  1|  DS|jordan|null|
+      |  1|  PM|  jack|null|
+      |  1| SDE|  jack|  20|
+      |  2|  BA|  null|  40|
+      |  2|  DS|  jack|null|
+      |  2|  PM|  jack|  30|
+      |  2| SDE|  jack|  10|
+      +---+----+------+----+
+
+      >>> (df1.ts.full_join(df2, sql_on = '(LHS.id == RHS.id) &
+      >>>                   (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
+      +----+------+----+----+------+----+
+      |  id|  name|dept|id_y|dept_y| age|
+      +----+------+----+----+------+----+
+      |   1|jordan|  DS|null|  null|null|
+      |   1|  jack|  PM|null|  null|null|
+      |   1|  jack| SDE|   1|   SDE|  20|
+      |null|  null|null|   2|    BA|  40|
+      |   2|  jack|  DS|null|  null|null|
+      |   2|  jack|  PM|null|  null|null|
+      |null|  null|null|   2|    PM|  30|
+      |   2|  jack| SDE|   2|   SDE|  10|
+      +----+------+----+----+------+----+
+
+
+   .. py:method:: anti_join(pyspark_df, on=None, on_x=None, on_y=None, sql_on=None)
+
+      Joins columns of pyspark_df to self by matching rows
+      Includes keys in self if not present in pyspark_df
+
+      :param pyspark_df (pyspark.sql.DataFrame):
+      :param on: Common column names to match
+      :type on: string or a list of strings
+      :param on_x: Column names of self to be matched with arg 'on_y'
+      :type on_x: string or a list of strings
+      :param on_y: Column names of y to be matched with arg 'on_x'
+      :type on_y: string or a list of strings
+      :param sql_on: SQL expression used to join both DataFrames.
+                     Recommended for inequality joins.
+                     The left table has to be specified as 'LHS' and the right table as 'RHS'.
+                     e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+      :type sql_on: string
+      :param suffix: suffix to append the columns of left and right in order to create
+                     unique names after the join
+      :type suffix: list of two strings
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      # Create the DataFrames
+      >>> df1 = spark.createDataFrame([
+          (1, "jordan", 'DS'),
+          (2, "jack", 'DS'),
+          (1, "jack", 'SDE'),
+          (2, "jack", 'SDE'),
+          (1, "jack", 'PM'),
+          (2, "jack", 'PM')
+          ],
+          ("id", "name", "dept")
+      )
+
+      >>> df2 = spark.createDataFrame([
+          (2, "SDE", 20),
+          (1, "SDE", 10),
+          (2, "PM", 30),
+          (2, "BA", 40),
+          ],
+        ("id", "dept", "age")
+      )
+
+      >>> df1.ts.anti_join(df2, on = ["id", "dept"]).show()
+      +---+----+------+
+      | id|dept|  name|
+      +---+----+------+
+      |  1|  DS|jordan|
+      |  2|  DS|  jack|
+      |  1|  PM|  jack|
+      +---+----+------+
+
+      >>> (df1.ts.anti_join(df2, sql_on = '(LHS.id == RHS.id) &
+                            (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
+      +---+------+----+
+      | id|  name|dept|
+      +---+------+----+
+      |  1|jordan|  DS|
+      |  2|  jack|  DS|
+      |  1|  jack|  PM|
+      |  2|  jack|  PM|
+      +---+------+----+
+
+      >>> df1.ts.anti_join(df2, on_x = ['id', 'dept'], on_y = ['age', 'dept']).show()
+      +---+------+----+
+      | id|  name|dept|
+      +---+------+----+
+      |  1|jordan|  DS|
+      |  2|  jack|  DS|
+      |  1|  jack| SDE|
+      |  2|  jack| SDE|
+      |  1|  jack|  PM|
+      |  2|  jack|  PM|
+      +---+------+----+
+
+
+   .. py:method:: semi_join(pyspark_df, on=None, on_x=None, on_y=None, sql_on=None)
+
+      Joins columns of pyspark_df to self by matching rows
+      Includes keys in self if present in pyspark_df
+
+      :param pyspark_df (pyspark.sql.DataFrame):
+      :param on: Common column names to match
+      :type on: string or a list of strings
+      :param on_x: Column names of self to be matched with arg 'on_y'
+      :type on_x: string or a list of strings
+      :param on_y: Column names of y to be matched with arg 'on_x'
+      :type on_y: string or a list of strings
+      :param sql_on: SQL expression used to join both DataFrames.
+                     Recommended for inequality joins.
+                     The left table has to be specified as 'LHS' and the right table as 'RHS'.
+                     e.g. '(LHS.dept == RHS.dept) & (LHS.age >= RHS.age) & (RHS.age < 30)'
+      :type sql_on: string
+      :param suffix: suffix to append the columns of left and right in order to create
+                     unique names after the join
+      :type suffix: list of two strings
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      # Create the DataFrames
+      >>> df1 = spark.createDataFrame([
+          (1, "jordan", 'DS'),
+          (2, "jack", 'DS'),
+          (1, "jack", 'SDE'),
+          (2, "jack", 'SDE'),
+          (1, "jack", 'PM'),
+          (2, "jack", 'PM')
+          ],
+          ("id", "name", "dept")
+      )
+
+      >>> df2 = spark.createDataFrame([
+          (2, "SDE", 20),
+          (1, "SDE", 10),
+          (2, "PM", 30),
+          (2, "BA", 40),
+          ],
+        ("id", "dept", "age")
+      )
+
+      >>> df1.ts.semi_join(df2, on = ["id", "dept"]).show()
+      # +---+----+----+
+      # | id|dept|name|
+      # +---+----+----+
+      # |  1| SDE|jack|
+      # |  2|  PM|jack|
+      # |  2| SDE|jack|
+      # +---+----+----+
+
+      >>> (df1.ts.semi_join(df2, sql_on = '(LHS.id == RHS.id) &
+                            (LHS.dept == RHS.dept) & (RHS.age < 30)')).show()
+      +---+------+----+
+      | id|  name|dept|
+      +---+------+----+
+      |  1|jordan|  DS|
+      |  2|  jack|  DS|
+      |  1|  jack|  PM|
+      |  2|  jack|  PM|
+      +---+------+----+
+
+      >>> df1.ts.semi_join(df2, on_x = ['id', 'dept'], on_y = ['age', 'dept']).show()
+      # +---+----+----+
+      # | id|name|dept|
+      # +---+----+----+
+      # +---+----+----+
+
+
+   .. py:method:: cross_join(pyspark_df, suffix=['', '_y'])
+
+      Returns the cartesian product of two DataFrames.
+
+      :param pyspark_df (pyspark.sql.DataFrame):
+      :param suffix: suffix to append the columns of left and right in order to create
+                     unique names after the join
+      :type suffix: list of two strings
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      # Create the DataFrames
+      >>> df1 = spark.createDataFrame([
+          (1, "jordan", 'DS'),
+          (2, "jack", 'PM')
+          ],
+          ("id", "name", "dept")
+      )
+
+      >>> df2 = spark.createDataFrame([
+          (2, "SDE", 20),
+          (1, "SDE", 10),
+          ],
+        ("id", "dept", "age")
+      )
+
+      >>> df1.ts.cross_join(df2).show()
+      +---+------+----+---+----+---+
+      | id| name|dept|id_y|dept_y|age_y|
+      +---+------+----+---+----+---+
+      |  1|jordan|  DS|  2| SDE| 20|
+      |  1|jordan|  DS|  1| SDE| 10|
+      |  2|  jack|  PM|  2| SDE| 20|
+      |  2|  jack|  PM|  1| SDE| 10|
+      +---+------+----+---+----+---+
+
+
+   .. py:method:: count(column_names, name='n', wt=None)
+
+      count
+      Count unique combinations of columns
+
+      :param column_names: Names of columns
+      :type column_names: string or list of strings
+      :param name: Name of the count column to be created (should not be an existing
+                   name). The default is 'n'.
+      :type name: string, optional
+      :param wt: Name of the weight column. The default is None. When None, the number of
+                 rows is counted
+      :type wt: string, optional
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      pen.ts.count(['species', 'sex']).show()
+      pen.ts.count('species', name = 'cnt').show()
+      pen.ts.count('species', wt = 'body_mass_g').show()
+
+
+   .. py:method:: add_count(column_names, name='n', wt=None)
+
+      add_count
+      Add a column of counts of unique combinations of columns
+
+      :param column_names: Names of columns
+      :type column_names: string or list of strings
+      :param name: Name of the count column to be created (should not be an existing
+                   name). The default is 'n'.
+      :type name: string, optional
+      :param wt: Name of the weight column. The default is None. When None, the number of
+                 rows is counted
+      :type wt: string, optional
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> pen.ts.add_count(['species', 'sex']).show()
+      >>> pen.ts.add_count('species', name = 'cnt').show()
+      >>> pen.ts.add_count('species', wt = 'body_mass_g').show()
+
+
+   .. py:method:: pipe(func, *args, **kwargs)
+
+      pipe
+      returns func(self, ...)
+
+      :param func: function to call
+      :type func: callable
+      :param \*args:
+      :type \*args: args
+      :param \*\*kwargs:
+      :type \*\*kwargs: kwargs
+
+      :rtype: Depends on func
+
+
+   .. py:method:: pipe_tee(func, *args, **kwargs)
+
+      pipe_tee
+      use pipe for side-effect and return input
+
+      :param func: function to call
+      :type func: callable
+      :param \*args:
+      :type \*args: args
+      :param \*\*kwargs:
+      :type \*\*kwargs: kwargs
+
+      :rtype: Input pyspark dataframe
+
+
+   .. py:method:: slice_min(n, order_by_column, with_ties=True, by=None)
+
+      slice_min
+      Subset top rows ordered by some column
+
+      :param n: Number of rows to subset
+      :type n: int
+      :param order_by_column: Name of the column to order by in ascending nulls to last
+      :type order_by_column: string
+      :param with_ties: Whether to return all rows when ordering results in ties.
+                        The default is True.
+      :type with_ties: bool, optional
+      :param by: column(s) to group by. The default is None.
+      :type by: string or list of strings, optional
+
+      :returns: * *pyspark dataframe*
+                * *Details*
+                * *-------*
+                * *The ordering always keeps null to last*
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> pen.ts.slice_min(n = 2,
+      >>>                  order_by_column = 'bill_depth_mm',
+      >>>                  with_ties = False,
+      >>>                  by = ['species', 'sex']
+      >>>                  )
+
+
+   .. py:method:: slice_max(n, order_by_column, with_ties=True, by=None)
+
+      slice_max
+      Subset top rows ordered by some column
+
+      :param n: Number of rows to subset
+      :type n: int
+      :param order_by_column: Name of the column to order by in descending nulls to first
+      :type order_by_column: string
+      :param with_ties: Whether to return all rows when ordering results in ties.
+                        The default is True.
+      :type with_ties: bool, optional
+      :param by: column(s) to group by. The default is None.
+      :type by: string or list of strings, optional
+
+      :returns: * *pyspark dataframe*
+                * *Details*
+                * *-------*
+                * *The ordering always keeps null to last*
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> pen.ts.slice_max(n = 2,
+      >>>                  order_by_column = 'bill_depth_mm',
+      >>>                  with_ties = False,
+      >>>                  by = ['species', 'sex']
+      >>>                  )
+
+
+   .. py:method:: rbind(pyspark_df, id=None)
+
+      rbind
+      bind or concatenate rows of two dataframes
+
+      :param pyspark_df:
+      :type pyspark_df: pyspark dataframe
+      :param id: When not None, a id column created with value 'left' for self and
+                 'right' for the pyspark_df.
+                 The default is None.
+      :type id: str, optional
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> df1 = pen.select(['species', 'island', 'bill_length_mm'])
+      >>> df2 = pen.select(['species', 'island', 'bill_depth_mm'])
+      >>>
+      >>> df1.ts.rbind(df2).show()
+      >>> df1.ts.rbind(df2, id = "id").show()
+
+
+   .. py:method:: union(pyspark_df)
+
+      rbind
+      bind or concatenate rows of two dataframes
+
+      :param pyspark_df:
+      :type pyspark_df: pyspark dataframe
+      :param id: When not None, a id column created with value 'left' for self and
+                 'right' for the pyspark_df.
+                 The default is None.
+      :type id: str, optional
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> df1 = pen.ts.slice_max(n = 2,
+      >>>                        order_by_column = 'bill_length_mm',
+      >>>                        with_ties = False
+      >>>                        )
+      >>> df2 = pen.ts.slice_max(n = 4,
+      >>>                        order_by_column = 'bill_length_mm',
+      >>>                        with_ties = False
+      >>>                        )
+      >>>
+      >>> df1.ts.union(df2).show()
+
+
+   .. py:method:: pivot_wider(names_from, values_from, values_fill=None, values_fn=None, id_cols=None, sep='__', names_prefix='', names_expand=False)
+
+      Pivot data from long to wide
+
+      :param names_from: column names whose unique combinations are expected to become column
+                         new names in the result
+      :type names_from: string or list of strings
+      :param values_from: column names to fill the new columns with
+      :type values_from: string or list of strings
+      :param values_fill: Optionally, a (scalar) value that specifies what each value should be
+                          filled in with when missing.
+                          This can be a dictionary if you want to apply different fill values to
+                          different value columns.
+                          Make sure only compatible data types are used in conjunction with
+                          the pyspark column.
+                          Missing values can only be filled with a scalar, or empty python
+                          list value.
+      :type values_fill: scalar, list or dict (default is None)
+      :param values_fn:          a dict of strings(of pyspark funtions) (default is None)
+                        A function to handle multiple values per row in the result.
+                        When a dict, keys should be a subset of arg 'values_from'.
+                        F.collect_list is applied by default in case nothing is specified.
+                        The string pf pyspark functions should be passed as a string
+                        starting with 'F.'
+                        This is to indicate that the function is from pyspark.
+                        Unlist the pivot columns to scalar values if and only if:
+                        1. values_fn is None and values_fn is None
+                        2. all the pivot columns are of type list/array and all the pivot_cols
+                           have values with a maximum length of 1.
+      :type values_fn: string(of pyspark functions) or
+      :param id_cols: Names of the columns that should uniquely identify an observation
+                      (row) after widening (columns of the original dataframe that are
+                      supposed to stay put)
+      :type id_cols: string or list of strings, default is None
+      :param sep: seperator to use while creating resulting column names
+      :type sep: string (default is "__")
+      :param names_prefix: prefix for new columns
+      :type names_prefix: string (default is "")
+      :param names_expand: When True, he output will contain column names corresponding
+                           to a complete expansion of all possible values in names_from.
+                           Implicit factor levels that aren't represented in the data will
+                           become explicit.
+      :type names_expand: boolean (default is False)
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> pen.ts.pivot_wider(id_cols = "island",
+      >>>                    names_from  = "sex,
+      >>>                    values_from = "bill_length_mm"
+      >>>                   )
+      >>> # All three inputs: 'id_cols', 'names_from', 'values_from' can be lists
+      >>> pen.ts.pivot_wider(id_cols = ["island", "sex"],
+      >>>                   names_from  = "species",
+      >>>                   values_from = "bill_length_mm"
+      >>>                   )
+      >>> pen.ts.pivot_wider(
+      >>>     id_cols       = ["island", "sex"]
+      >>>     , names_from  = "species"
+      >>>     , values_from = ["bill_length_mm", "bill_depth_mm"]
+      >>>     )
+      >>> pen.ts.pivot_wider(id_cols = ["island", "sex"]
+      >>>                           , names_from  = ["species", "year"]
+      >>>                           , values_from = "bill_length_mm"
+      >>>                           )
+      >>> pen.ts.pivot_wider(
+      >>>     id_cols       = ["island", "sex"]
+      >>>     , names_from  = ["species", "year"]
+      >>>     , values_from = ["bill_length_mm", "bill_depth_mm"]
+      >>>     )
+      >>> # when id_cols is empty, all columns except the columns from
+      >>> # `names_from` and `values_from` are considered as id_cols
+      >>> (pen.ts.select(['flipper_length_mm', 'body_mass_g'], include = False)
+      >>>         .pivot_wider(names_from    = ["species", "year"]
+      >>>               , values_from = ["bill_length_mm", "bill_depth_mm"]
+      >>>               )
+      >>>  )
+      >>> # use some prefix for new columns
+      >>> pen.ts.pivot_wider(id_cols       = "island"
+      >>>                           , names_from  = "sex"
+      >>>                           , values_from = "bill_length_mm"
+      >>>                           , names_prefix = "gender_"
+      >>>                           )
+
+
+   .. py:method:: pivot_longer(cols, names_to='name', values_to='value', include=True, values_drop_na=False)
+
+      Pivot from wide to long
+      aka melt
+
+      :param cols: Column names to be melted.
+                   The dtypes of the columns should match.
+                   Leftover columns are considered as 'id' columns.
+                   When include is False, 'cols' refers to leftover columns.
+      :type cols: list of strings
+      :param names_to: Name of the resulting column which will hold the names of the columns
+                       to be melted
+      :type names_to: string (default: 'name')
+      :param values_to: Name of the resulting column which will hold the values of the columns
+                        to be melted
+      :type values_to: string (default: 'value')
+      :param include: If True, cols are used to melt. Else, cols are considered as 'id'
+                      columns and the leftover columns are melted.
+      :type include: bool (default: True)
+      :param values_drop_na: Whether to drop the rows corresponding to missing value in the result
+      :type values_drop_na: bool (default: False)
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> df = (pen.ts.select(['species',
+      >>>                     'bill_length_mm',
+      >>>                     'bill_depth_mm',
+      >>>                     'flipper_length_mm']
+      >>>                     )
+      >>>       )
+      >>> df.pivot_longer(cols = ['bill_length_mm',
+      >>>                         'bill_depth_mm',
+      >>>                         'flipper_length_mm']
+      >>>                 )
+      >>> # pivot by specifying 'id' columns to obtain the same result as above
+      >>> # this is helpful when there are many columns to melt
+      >>> df.pivot_longer(cols = 'species',
+      >>>                include = False
+      >>>                )
+      >>> # If you want to drop the rows corresponding to missing value in the result,
+      >>> # set values_drop_na to True
+      >>> df.pivot_longer(cols = ['bill_length_mm',
+      >>>                         'bill_depth_mm'],
+      >>>                 values_drop_na = True
+      >>>                 )
+
+
+   .. py:method:: _construct_pyspark_expr_from_values_from(values_from, values_fn)
+
+
+   .. py:method:: _get_pivot_columns(names_from, sep, names_expand, df, names_from_pyspark_expr)
+
+
+   .. py:method:: _fill_missing_values_for_pivot_columns(values_fill, df, new_pivot_cols)
+
+
+   .. py:method:: _unlist_pivot_cols(values_fill, values_fn, df, new_pivot_cols)
+
+
+   .. py:method:: nest_by(by, name='data')
+
+      nest
+      nest a pyspark dataframe per group as an array of structs
+
+      :param by: column(s) to group by.
+      :type by: string or list of strings, optional
+      :param name: Name of the nested column which will be created.
+      :type name: string
+
+      :returns: **res**
+      :rtype: pyspark dataframe
+
+
+   .. py:method:: unnest_wider(colname)
+
+      unnest_wider
+      creates multiple columns from a struct column
+
+      :param colname: Name of the column of struct type.
+      :type colname: string
+
+      :rtype: pyspark dataframe
+
+
+   .. py:method:: unnest_longer(colname, name='name', value='value')
+
+      unnest_longer
+      creates key and value columns from a struct column
+
+      :param colname: Name of the column of struct type.
+      :type colname: str
+      :param name: Name of the resulting key column. Default is 'name'.
+      :type name: str
+      :param value: Name of the resulting value column. Default is 'value'.
+      :type value: str
+
+      :rtype: pyspark dataframe
+
+
+   .. py:method:: unnest(colname)
+
+      unnest
+      unnests an column where each element is an array of structs
+
+      :param colname: Name of the column of struct type.
+      :type colname: string
+
+      :rtype: pyspark dataframe
+
+
+   .. py:method:: fill_na(column_direction_dict, order_by, by=None)
+
+      fill_na (alias: fill)
+      fill missing values from neighboring rows
+
+      :param column_direction_dict: key is column. value should be one among:
+                                    "up", "down", "updown", "downup"
+      :type column_direction_dict: dict
+      :param order_by: order_by specification
+      :type order_by: string, tuple or list of tuples
+      :param by: Names of columns to partition by. The default is None.
+      :type by: string or list of strings, optional
+
+      :rtype: pyspark dataframe
+
+
+   .. py:method:: drop_na(column_names=None, how='any', thresh=None)
+
+      drop_na (alias: drop)
+      drop rows with null values
+
+      :param how: "any" or "all". The default is "any".
+                  If 'any', drop a row if it contains any nulls.
+                  If 'all', drop a row only if all its values are null.
+      :type how: string, optional
+      :param column_names: It specifies the columns to consider for null values.
+                           If a row has null values only in the specified columns,
+                           it will be dropped.
+      :type column_names: string or list of strings, optional
+      :param thresh: Number of non-null values required to keep a row. The default is None.
+                     This overrides how parameter.
+      :type thresh: int, optional
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> # create a DataFrame with null values
+      >>> data = [("Alice", 25, None), ("Bob", None, 80), (None, 30, 90)]
+      >>> df = spark.createDataFrame(data, ["name", "age", "score"])
+      >>> # drop rows with null values
+      >>> df1 = df.ts.drop_na()
+      +----+---+-----+
+      |name|age|score|
+      +----+---+-----+
+      +----+---+-----+
+      >>> # drop rows with null values in a specific column
+      >>> df2 = df.ts.drop_na(column_names = ["age"])
+      +-----+---+-----+
+      | name|age|score|
+      +-----+---+-----+
+      |Alice| 25| null|
+      | null| 30|   90|
+      +-----+---+-----+
+      >>> # drop rows with null values if all values are null.
+      >>> df3 = df.ts.drop_na(how = "all")
+      +-----+----+-----+
+      | name| age|score|
+      +-----+----+-----+
+      |Alice|  25| null|
+      |  Bob|null|   80|
+      | null|  30|   90|
+      +-----+----+-----+
+      >>> # drop rows with less than 3 non-null values
+      >>> df4 = df.ts.drop_na(thresh=3)
+      +----+---+-----+
+      |name|age|score|
+      +----+---+-----+
+      +----+---+-----+
+
+
+   .. py:method:: replace_na(value)
+
+      Replace missing values with a specified value.
+
+      :param value: When a dict, key should be a column name and value should be the
+                    value to replace by missing values of the column
+                    When a scalar or an empty list,
+                    missing values of all columns will be replaced with value.
+                    A scalar value could be a string, a numeric value(int, float),
+                    or a boolean value.
+      :type value: dict or a scalar or an empty list
+
+      :rtype: pyspark dataframe
+
+      .. rubric:: Examples
+
+      >>> import tidypyspark.tidypyspark_class as ts
+      >>> from tidypyspark.datasets import get_penguins_path
+      >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+      >>> # create a DataFrame with null values
+      >>> data = [("Alice", 25, None, [20, 30, 40]),
+      >>>         ("Bob", None, 80, [10, 20, 30]),
+      >>>         (None, 30, 90 , None)
+      >>>         ]
+      >>> df = spark.createDataFrame(data, ["name", "age", "score", "marks"])
+      +-----+----+-----+------------+
+      | name| age|score|       marks|
+      +-----+----+-----+------------+
+      |Alice|  25| null|[20, 30, 40]|
+      |  Bob|null|   80|[10, 20, 30]|
+      | null|  30|   90|        null|
+      +-----+----+-----+------------+
+      >>> # replace null values with a dictionary of column names and values
+      >>> df2 = df.ts.replace_na({"name": "A", "score": 25, "marks": []})
+      +-----+----+-----+------------+
+      | name| age|score|       marks|
+      +-----+----+-----+------------+
+      |Alice|  25|   25|[20, 30, 40]|
+      |  Bob|null|   80|[10, 20, 30]|
+      |    A|  30|   90|          []|
+      +-----+----+-----+------------+
+
+
+   .. py:method:: _validate_compatible_datatypes(value, df, df_dtypes)
+
+
+

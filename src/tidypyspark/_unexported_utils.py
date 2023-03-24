@@ -215,7 +215,9 @@ def _get_compatible_datatypes_of_python_and_spark():
     '''
     get_compatible_datatypes_of_python_and_spark()
     
-    Returns a dictionary of data types that are compatible with both python and spark. The keys are the python data types and the values are the spark data types.
+    Returns a dictionary of data types that are compatible with both python
+    and spark. The keys are the python data types and the values are the spark
+    data types.
     
     Returns
     -------

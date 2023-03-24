@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tidypyspark._unexported_utils &mdash; tidypyspark  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            tidypyspark
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">tidypyspark</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">tidypyspark._unexported_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for tidypyspark._unexported_utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># ----------------------------------------------------------------------------</span>
+<span class="c1"># This file is a part of tidypyspark python package</span>
+<span class="c1"># Find the dev version here: https://github.com/talegari/tidypyspark</span>
+<span class="c1"># ----------------------------------------------------------------------------</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="_is_kwargable"><a class="viewcode-back" href="../../autoapi/tidypyspark/_unexported_utils/index.html#tidypyspark._unexported_utils._is_kwargable">[docs]</a><span class="k">def</span> <span class="nf">_is_kwargable</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">assert</span> <span class="n">callable</span><span class="p">(</span><span class="n">func</span><span class="p">),</span> <span class="s2">&quot;arg &#39;func&#39; should be callable&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getfullargspec</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">varkw</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">pass</span> <span class="c1"># res is False</span>
+    <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="_is_valid_colname"><a class="viewcode-back" href="../../autoapi/tidypyspark/_unexported_utils/index.html#tidypyspark._unexported_utils._is_valid_colname">[docs]</a><span class="k">def</span> <span class="nf">_is_valid_colname</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="nb">str</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">string</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">string</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span></div>
+  
+<div class="viewcode-block" id="_is_string_or_string_list"><a class="viewcode-back" href="../../autoapi/tidypyspark/_unexported_utils/index.html#tidypyspark._unexported_utils._is_string_or_string_list">[docs]</a><span class="k">def</span> <span class="nf">_is_string_or_string_list</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    _is_string_or_string_list(x)</span>
+<span class="sd">    </span>
+<span class="sd">    Check whether the input is a string or a list of strings</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : object</span>
+<span class="sd">        Any python object</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">    True if input is a string or a list of strings</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; _is_string_or_string_list(&quot;bar&quot;)      # True</span>
+<span class="sd">    &gt;&gt;&gt; _is_string_or_string_list([&quot;bar&quot;])    # True</span>
+<span class="sd">    &gt;&gt;&gt; _is_string_or_string_list((&quot;bar&quot;,))   # False</span>
+<span class="sd">    &gt;&gt;&gt; _is_string_or_string_list([&quot;bar&quot;, 1]) # False</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]):</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="kc">False</span>
+    
+    <span class="k">return</span> <span class="n">res</span></div>
+    
+<div class="viewcode-block" id="_enlist"><a class="viewcode-back" href="../../autoapi/tidypyspark/_unexported_utils/index.html#tidypyspark._unexported_utils._enlist">[docs]</a><span class="k">def</span> <span class="nf">_enlist</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    _enlist(x)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns the input in a list (as first element of the list) unless input itself is a list</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : object</span>
+<span class="sd">        Any python object</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list</span>
+<span class="sd">    Returns the input in a list (as first element of the list) unless input itself is a list</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; _enlist([&quot;a&quot;]) # [&quot;a&quot;]</span>
+<span class="sd">    &gt;&gt;&gt; _enlist(&quot;a&quot;)   # [&quot;a&quot;]</span>
+<span class="sd">    &gt;&gt;&gt; _enlist((1, )) # [(1, )]</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">]</span>
+    
+    <span class="k">return</span> <span class="n">x</span></div>
+
+<div class="viewcode-block" id="_get_unique_names"><a class="viewcode-back" href="../../autoapi/tidypyspark/_unexported_utils/index.html#tidypyspark._unexported_utils._get_unique_names">[docs]</a><span class="k">def</span> <span class="nf">_get_unique_names</span><span class="p">(</span><span class="n">strings</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    _get_unique_names(strings)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns a list of same length as the input such that elements are unique. This is done by adding &#39;_1&#39;. The resulting list does not alter nth element if the nth element occurs for the first time in the input list starting from left.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    strings : list</span>
+<span class="sd">        A list of strings</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list of strings</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; _get_unique_names([&#39;a&#39;, &#39;b&#39;])               # [&#39;a&#39;, &#39;b&#39;]</span>
+<span class="sd">    &gt;&gt;&gt; _get_unique_names([&#39;a&#39;, &#39;a&#39;])               # [&#39;a&#39;, &#39;a_1&#39;]</span>
+<span class="sd">    &gt;&gt;&gt; _get_unique_names([&#39;a&#39;, &#39;a&#39;, &#39;a_1&#39;])        # [&#39;a&#39;, &#39;a_1_1&#39;, &#39;a_1&#39;]</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">assert</span> <span class="n">_is_string_or_string_list</span><span class="p">(</span><span class="n">strings</span><span class="p">)</span>
+    <span class="n">strings</span> <span class="o">=</span> <span class="n">_enlist</span><span class="p">(</span><span class="n">strings</span><span class="p">)</span>
+
+    <span class="n">new_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">old_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">strings</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">astring</span> <span class="ow">in</span> <span class="n">strings</span><span class="p">:</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span> 
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">astring</span> <span class="ow">in</span> <span class="n">new_list</span><span class="p">:</span>
+                <span class="n">counter</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">astring</span> <span class="o">=</span> <span class="n">astring</span> <span class="o">+</span> <span class="s2">&quot;_1&quot;</span> 
+            <span class="k">elif</span> <span class="n">astring</span> <span class="ow">in</span> <span class="n">old_set</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">counter</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">astring</span> <span class="o">=</span> <span class="n">astring</span> <span class="o">+</span> <span class="s2">&quot;_1&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">astring</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">old_set</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">astring</span><span class="p">)</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="k">pass</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">astring</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">old_set</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">astring</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+                <span class="k">break</span>
+        
+    <span class="k">return</span> <span class="n">new_list</span></div>
+
+<div class="viewcode-block" id="_is_unique_list"><a class="viewcode-back" href="../../autoapi/tidypyspark/_unexported_utils/index.html#tidypyspark._unexported_utils._is_unique_list">[docs]</a><span class="k">def</span> <span class="nf">_is_unique_list</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    _is_unique_list(x)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns True if input list does not have duplicates</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : list</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="_generate_new_string"><a class="viewcode-back" href="../../autoapi/tidypyspark/_unexported_utils/index.html#tidypyspark._unexported_utils._generate_new_string">[docs]</a><span class="k">def</span> <span class="nf">_generate_new_string</span><span class="p">(</span><span class="n">strings</span><span class="p">):</span>
+    
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">strings</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">strings</span><span class="p">])</span>
+    
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">random_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">ascii_letters</span><span class="p">),</span> <span class="mi">20</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">random_string</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">strings</span><span class="p">:</span>
+            <span class="k">break</span>
+    
+    <span class="k">return</span> <span class="n">random_string</span></div>
+
+<div class="viewcode-block" id="_is_nested"><a class="viewcode-back" href="../../autoapi/tidypyspark/_unexported_utils/index.html#tidypyspark._unexported_utils._is_nested">[docs]</a><span class="k">def</span> <span class="nf">_is_nested</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">set</span><span class="p">))</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">x</span><span class="p">])</span>
+    
+    <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="_flatten_strings"><a class="viewcode-back" href="../../autoapi/tidypyspark/_unexported_utils/index.html#tidypyspark._unexported_utils._flatten_strings">[docs]</a><span class="k">def</span> <span class="nf">_flatten_strings</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">ele</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ele</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">union</span><span class="p">({</span><span class="n">ele</span><span class="p">})</span>
+        <span class="k">elif</span> <span class="n">_is_nested</span><span class="p">(</span><span class="n">ele</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">_flatten_strings</span><span class="p">(</span><span class="n">ele</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ele</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">res</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="_nested_is_unique"><a class="viewcode-back" href="../../autoapi/tidypyspark/_unexported_utils/index.html#tidypyspark._unexported_utils._nested_is_unique">[docs]</a><span class="k">def</span> <span class="nf">_nested_is_unique</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">ele</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ele</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">res</span> <span class="o">+</span> <span class="p">[</span><span class="n">ele</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">_is_nested</span><span class="p">(</span><span class="n">ele</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">res</span> <span class="o">+</span> <span class="n">_flatten_strings</span><span class="p">(</span><span class="n">ele</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">_is_string_or_string_list</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">ele</span><span class="p">)),</span>\
+                <span class="s2">&quot;Each element of the nested structure should be a string&quot;</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">res</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">ele</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">res</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="_is_perfect_sublist"><a class="viewcode-back" href="../../autoapi/tidypyspark/_unexported_utils/index.html#tidypyspark._unexported_utils._is_perfect_sublist">[docs]</a><span class="k">def</span> <span class="nf">_is_perfect_sublist</span><span class="p">(</span><span class="n">subset_list</span><span class="p">,</span> <span class="n">full_list</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">subset_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">full_list</span><span class="p">:</span>
+        <span class="n">start_index</span> <span class="o">=</span> <span class="n">full_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">subset_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">subset_list</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">full_list</span><span class="p">[</span><span class="n">start_index</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">subset_list</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="_get_compatible_datatypes_of_python_and_spark"><a class="viewcode-back" href="../../autoapi/tidypyspark/_unexported_utils/index.html#tidypyspark._unexported_utils._get_compatible_datatypes_of_python_and_spark">[docs]</a><span class="k">def</span> <span class="nf">_get_compatible_datatypes_of_python_and_spark</span><span class="p">():</span>
+
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    get_compatible_datatypes_of_python_and_spark()</span>
+<span class="sd">    </span>
+<span class="sd">    Returns a dictionary of data types that are compatible with both python</span>
+<span class="sd">    and spark. The keys are the python data types and the values are the spark</span>
+<span class="sd">    data types.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict&lt;string, set&gt;</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;str&quot;</span><span class="p">:</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;string&quot;</span><span class="p">]),</span>
+        <span class="s2">&quot;int&quot;</span><span class="p">:</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;integer&quot;</span><span class="p">,</span> <span class="s2">&quot;long&quot;</span><span class="p">]),</span>
+        <span class="s2">&quot;float&quot;</span><span class="p">:</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;double&quot;</span><span class="p">,</span> <span class="s2">&quot;float&quot;</span><span class="p">]),</span>
+        <span class="s2">&quot;bool&quot;</span><span class="p">:</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;boolean&quot;</span><span class="p">]),</span>
+        <span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;array&quot;</span><span class="p">])</span>
+    <span class="p">}</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Srikanth Komala sheshachala.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

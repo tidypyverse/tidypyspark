@@ -8,7 +8,7 @@
 
 project = u"tidypyspark"
 copyright = u"2023, Srikanth Komala sheshachala"
-author = u"Srikanth Komala sheshachala"
+author = u"Srikanth, Jaspreet, Suyash, Ashish"
 
 # -- General configuration ---------------------------------------------------
 
@@ -26,7 +26,7 @@ autoapi_dirs = ["../src"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store","contributing.md", "conduct.md", "example.ipynb"]
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -34,3 +34,8 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # a list of builtin themes.
 #
 html_theme = "sphinx_rtd_theme"
+
+# dont show private methods
+autodoc_default_options = {
+    'private-members': False
+}

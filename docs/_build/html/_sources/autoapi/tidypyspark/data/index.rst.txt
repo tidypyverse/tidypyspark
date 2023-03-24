@@ -1,0 +1,6 @@
+:py:mod:`tidypyspark.data`
+==========================
+
+.. py:module:: tidypyspark.data
+
+

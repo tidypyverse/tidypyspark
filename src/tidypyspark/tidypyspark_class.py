@@ -46,23 +46,67 @@ class acc_on_pyspark():
   # attributes -------------------------------------------------------------
   @property
   def nrow(self):
+    '''
+    nrow
+    get munber of rows
+    
+    Notes
+    -----
+    Just a placeholder to inform user to use count() method
+    
+    Returns
+    -------
+    None
+    '''
     print("Please run: `df.ts.count()` to get the number of rows")
     return None
   
   @property
   def ncol(self):
+    '''
+    ncol
+    get number of columns
+
+    Returns
+    -------
+    (Integer) Number of columns
+    '''
     return len(self.__data.columns)
   
   @property
   def colnames(self):
+    '''
+    dim
+    get column names
+
+    Returns
+    -------
+    list with column names as strings
+    '''
     return list(self.__data.columns)
   
   @property
   def shape(self):
+    '''
+    shape
+    get shape
+
+    Returns
+    -------
+    tuple of number of rows and number of columns
+    '''
     return (self.nrow, self.ncol)
   
   @property
   def dim(self):
+    '''
+    dim
+    get shape
+
+    Returns
+    -------
+    tuple of number of rows and number of columns
+    '''
     return (self.nrow, self.ncol)
   
   @property
@@ -327,10 +371,11 @@ class acc_on_pyspark():
     '''
     glimpse
 
-    This function prints the first 100(default) rows of the dataset, along with the number of rows 
-    and columns in the dataset and the data types of each column. It also displays the values 
-    of each column, limited to the first 100(default) values. If the number of rows exceeds 100, then 
-    the values are truncated accordingly.
+    This function prints the first 100(default) rows of the dataset, along with
+    the number of rows and columns in the dataset and the data types of each
+    column. It also displays the values of each column, limited to the first
+    100 (default) values. If the number of rows exceeds 100, then the values are
+    truncated accordingly.
 
     Parameters
     ----------
@@ -343,16 +388,10 @@ class acc_on_pyspark():
 
     Examples
     --------
-    pen.ts.glimpse()
-
-    species           <string> Adelie, Adelie, Adelie, Adelie, Adelie, Adelie, Ad...
-    island            <string> Torgersen, Torgersen, Torgersen, Torgersen, Torger...
-    bill_length_mm    <string> 39.1, 39.5, 40.3, None, 36.7, 39.3, 38.9, 39.2, 34...
-    bill_depth_mm     <string> 18.7, 17.4, 18.0, None, 19.3, 20.6, 17.8, 19.6, 18...
-    flipper_length_mm <string> 181.0, 186.0, 195.0, None, 193.0, 190.0, 181.0, 19...
-    body_mass_g       <string> 3750.0, 3800.0, 3250.0, None, 3450.0, 3650.0, 3625...
-    sex               <string> male, female, female, None, female, male, female, ...
-    year              <string> 2007, 2007, 2007, 2007, 2007, 2007, 2007, 2007, 20...
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> pen.ts.glimpse()
     '''
     from shutil import get_terminal_size
     w, h = get_terminal_size()
@@ -362,46 +401,46 @@ class acc_on_pyspark():
 
     res = [f'Columns: {ncol}']
 
-    col_strs = []
     names = []
     n_ljust = 0
     dtypes = []
     t_ljust = 0
-    values = []
 
     # Input validation
-    assert isinstance(n_rows, int) and n_rows > 0, "n_rows must be a positive integer"
-    assert isinstance(n_columns, int) and n_columns > 0, "n_columns must be a positive integer"
+    assert isinstance(n_rows, int) and n_rows > 0,\
+      "n_rows must be a positive integer"
+    assert isinstance(n_columns, int) and n_columns > 0,\
+      "n_columns must be a positive integer"
 
     #get dtypes for all columns
     data_temp = self.__data.limit(n_rows).toPandas()
     all_dtypes = self.types
 
     for acol in self.colnames[0:n_columns]:
-        names.append(acol)
-        n_ljust = max(n_ljust, len(names[-1]))
-        dtypes.append(f'<{all_dtypes[acol]}>')
-        t_ljust = max(t_ljust, len(dtypes[-1]))
+      names.append(acol)
+      n_ljust = max(n_ljust, len(names[-1]))
+      dtypes.append(f'<{all_dtypes[acol]}>')
+      t_ljust = max(t_ljust, len(dtypes[-1]))
 
     #get values for float and non float columns
     float_vals_precision = 2
     for name, dtype in zip(names, dtypes):
-        vals = data_temp.loc[0:n_rows, name]
-        if dtype[1:6] == "float":
-            vals = vals.round(float_vals_precision)
-        val_str = ", ".join(list(map(str, vals)))
+      vals = data_temp.loc[0:n_rows, name]
+      if dtype[1:6] == "float":
+          vals = vals.round(float_vals_precision)
+      val_str = ", ".join(list(map(str, vals)))
 
-        if len(val_str) > w-2-n_ljust-t_ljust:
-            val_str = val_str[0:(w-2-n_ljust-t_ljust)-3] + "..."
-        res_str = f'{name.ljust(n_ljust)} {dtype.ljust(t_ljust)} {val_str}'
-        res.append(res_str)
+      if len(val_str) > w-2-n_ljust-t_ljust:
+          val_str = val_str[0:(w-2-n_ljust-t_ljust)-3] + "..."
+      res_str = f'{name.ljust(n_ljust)} {dtype.ljust(t_ljust)} {val_str}'
+      res.append(res_str)
 
     # print additional columnnames/count in case it is more then n_rows
     if ncol > n_columns:
-        footer = f'\nmore columns: {", ".join(self.colnames[n_columns:(n_columns+50)])}'
-        if ncol >= n_columns+50:
-            footer += "..."
-
+      footer = (f'\nmore columns: '
+                f'{", ".join(self.colnames[n_columns:(n_columns+50)])}')
+      if ncol >= n_columns+50:
+        footer += "..."
         res.append(footer)
     print("\n".join(res))
     return None
@@ -427,15 +466,13 @@ class acc_on_pyspark():
     
     Examples
     --------
-    (pen.ts.add_row_number('bill_length_mm')
-        .show(10)
-        )
-    
-    (pen.ts.add_row_number('bill_length_mm', by = 'species')
-        .filter(F.col('row_number') <= 2)
-        .show(10)
-        )
-    
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> pen.ts.add_row_number('bill_length_mm').show(10)
+    >>> (pen.ts.add_row_number('bill_length_mm', by='species')
+    >>>     .filter(F.col('row_number') <= 2)
+    >>>     .show(10))
     '''
     order_by = self._validate_order_by(order_by)
     assert name not in self.colnames,\
@@ -470,15 +507,15 @@ class acc_on_pyspark():
     
     Examples
     --------
-    pen = spark.read.csv("pen.csv", header = True).drop("_c0")
-    pen.show(6)
-    
-    (pen.ts.add_row_number('species', by = 'species')
-        .filter(F.col('row_number') <= 2)
-        .drop('row_number')
-        .ts.add_group_number('species', name = 'gn')
-        .show(10)
-        )
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> (pen.ts.add_row_number('species', by = 'species')
+    >>>     .filter(F.col('row_number') <= 2)
+    >>>     .drop('row_number')
+    >>>     .ts.add_group_number('species', name = 'gn')
+    >>>     .show(10)
+    >>>     )
     '''
     assert name not in self.colnames,\
       f"{name} should not be an existing column name"
@@ -602,9 +639,12 @@ class acc_on_pyspark():
     
     Examples
     --------
-    pen.ts.select('species').show(10)
-    pen.ts.select(['species', 'island']).show(10)
-    pen.ts.select(['species', 'island'], include = False).show(10)
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> pen.ts.select('species').show(10)
+    >>> pen.ts.select(['species', 'island']).show(10)
+    >>> pen.ts.select(['species', 'island'], include = False).show(10)
     '''
     cn = self._validate_column_names(column_names)
     
@@ -637,8 +677,11 @@ class acc_on_pyspark():
     
     Examples
     --------
-    pen.ts.arrange('bill_depth_mm').show(10)
-    pen.ts.arrange(['bill_depth_mm', ('bill_length_mm', 'desc')]).show(10)
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> pen.ts.arrange('bill_depth_mm').show(10)
+    >>> pen.ts.arrange(['bill_depth_mm', ('bill_length_mm', 'desc')]).show(10)
     '''
     order_by = self._validate_order_by(order_by)
     warnings.warn(
@@ -670,9 +713,12 @@ class acc_on_pyspark():
     
     Examples
     --------
-    pen.ts.distinct('island').show(10)
-    pen.ts.distinct(['species', 'island']).show(10)
-    pen.ts.distinct(['species', 'island'], keep_all = True).show(10)
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> pen.ts.distinct('island').show(10)
+    >>> pen.ts.distinct(['species', 'island']).show(10)
+    >>> pen.ts.distinct(['species', 'island'], keep_all = True).show(10)
     '''
     if column_names is None:
       column_names = self.colnames
@@ -713,10 +759,10 @@ class acc_on_pyspark():
 
     Examples
     --------
-    pen.ts.rename({'species': 'species_2', "year":"year_2})
-
-    Invalid Example
-    pen.ts.rename({'species': 'species_2', "species_2":"species_3})
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> pen.ts.rename({'species': 'species_2', "year":"year_2})
     '''
     cn = self.colnames
 
@@ -772,14 +818,15 @@ class acc_on_pyspark():
 
     Examples
     --------
-    # move "island" and "species" columns to the left of the dataframe
-    pen.ts.relocate(["island", "species"])
-
-    # move "sex" and "year" columns to the left of "island" column
-    pen.ts.relocate(["sex", "year"], before = "island")
-
-    # move "island" and "species" columns to the right of "year" column
-    pen.ts.relocate(["island", "species"], after = "year")
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> # move "island" and "species" columns to the left of the dataframe
+    >>> pen.ts.relocate(["island", "species"])
+    >>> # move "sex" and "year" columns to the left of "island" column
+    >>> pen.ts.relocate(["sex", "year"], before = "island")
+    >>> # move "island" and "species" columns to the right of "year" column
+    >>> pen.ts.relocate(["island", "species"], after = "year")
     '''
 
     column_names = self._validate_column_names(column_names)
@@ -845,26 +892,27 @@ class acc_on_pyspark():
       
     Examples
     --------
-    (pen.ts.mutate({'bl_+_1': F.col('bill_length_mm') + 1,
-                     'bl_+_1_by_2': F.col('bl_+_1') / 2})
-        .show(10)
-        )
-    
-    # grouped and order mutate operation
-    (pen.ts.add_row_number(order_by = 'bill_depth_mm')
-        .ts.mutate({'cumsum_bl': F.sum('bill_length_mm')},
-                   by = 'species',
-                   order_by = ['bill_depth_mm', 'row_number'],
-                   range_between = (-float('inf'), 0)
-                   )
-        .ts.select(['bill_length_mm',
-                    'species',
-                    'bill_depth_mm',
-                    'cumsum_bl'
-                    ])
-        .show(10)
-        )
-    
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> (pen.ts.mutate({'bl_+_1': F.col('bill_length_mm') + 1,
+    >>>                  'bl_+_1_by_2': F.col('bl_+_1') / 2})
+    >>>     .show(10)
+    >>>     )
+    >>> # grouped and order mutate operation
+    >>> (pen.ts.add_row_number(order_by = 'bill_depth_mm')
+    >>>     .ts.mutate({'cumsum_bl': F.sum('bill_length_mm')},
+    >>>                by = 'species',
+    >>>                order_by = ['bill_depth_mm', 'row_number'],
+    >>>                range_between = (-float('inf'), 0)
+    >>>                )
+    >>>     .ts.select(['bill_length_mm',
+    >>>                 'species',
+    >>>                 'bill_depth_mm',
+    >>>                 'cumsum_bl'
+    >>>                 ])
+    >>>     .show(10)
+    >>>     )
     '''
     assert all([_is_valid_colname(x) for x in dictionary.keys()]),\
       "Atleast one key of the dictionary is not a valid column name"
@@ -887,9 +935,9 @@ class acc_on_pyspark():
       if len(kwargs) >= 1:
         for akwarg_name, akwarg_value in kwargs.items():
           if akwarg_name == "by":
-            kwargs[akwarg_name] = self._validate_by(akwarg_name)
+            kwargs[akwarg_name] = self._validate_by(kwargs[akwarg_name])
           if akwarg_name == "order_by":
-            kwargs[akwarg_name] = self._validate_order_by(akwarg_name)
+            kwargs[akwarg_name] = self._validate_order_by(kwargs[akwarg_name])
         win = self._create_windowspec(**kwargs)
         with_win = True
     
@@ -922,22 +970,25 @@ class acc_on_pyspark():
       
     Examples
     --------
-    # ungrouped summarise
-    (pen.ts.summarise({'mean_bl': F.mean(F.col('bill_length_mm')),
-                       'count_species': F.count(F.col('species'))
-                      }
-                     )
-        .show(10)
-        )
-    
-    # grouped summarise
-    (pen.ts.summarise({'mean_bl': F.mean(F.col('bill_length_mm')),
-                       'count_species': F.count(F.col('species'))
-                      },
-                      by = 'island'
-                     )
-        .show(10)
-        )
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> # ungrouped summarise
+    >>> (pen.ts.summarise({'mean_bl': F.mean(F.col('bill_length_mm')),
+    >>>                    'count_species': F.count(F.col('species'))
+    >>>                   }
+    >>>                  )
+    >>>     .show(10)
+    >>>     )
+    >>> 
+    >>> # grouped summarise
+    >>> (pen.ts.summarise({'mean_bl': F.mean(F.col('bill_length_mm')),
+    >>>                    'count_species': F.count(F.col('species'))
+    >>>                   },
+    >>>                   by = 'island'
+    >>>                  )
+    >>>     .show(10)
+    >>>     )
     '''
     assert all([_is_valid_colname(x) for x in dictionary.keys()]),\
       "Atleast one key of the dictionary is not a valid column name"
@@ -1358,8 +1409,9 @@ class acc_on_pyspark():
     |  2| SDE|jack| 10|
     +---+----+----+---+
 
-    >>> df1.ts.inner_join(df2, 
-    >>>        sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)', how = 'inner).show()
+    >>> (df1.ts.join(df2, 
+    >>>        sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & 
+    >>>        (RHS.age < 30)', how = 'inner).show())
     +---+----+----+----+------+---+
     | id|name|dept|id_y|dept_y|age|
     +---+----+----+----+------+---+
@@ -1465,7 +1517,8 @@ class acc_on_pyspark():
     |  2|  PM|  jack|  30|
     +---+----+------+----+
 
-    >>> df1.ts.left_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)').show()
+    >>> (df1.ts.left_join(df2, sql_on = '(LHS.id == RHS.id) & 
+    >>>                   (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
     +---+------+----+----+------+----+
     | id|  name|dept|id_y|dept_y| age|
     +---+------+----+----+------+----+
@@ -1559,7 +1612,8 @@ class acc_on_pyspark():
     |  2|  BA|null| 40|
     +---+----+----+---+
 
-    >>> df1.ts.right_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)').show()
+    >>> (df1.ts.right_join(df2, sql_on = '(LHS.id == RHS.id) & 
+    >>>                    (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
     +----+----+----+----+------+---+
     |  id|name|dept|id_y|dept_y|age|
     +----+----+----+----+------+---+
@@ -1648,7 +1702,8 @@ class acc_on_pyspark():
     |  2| SDE|jack| 10|
     +---+----+----+---+
 
-    >>> df1.ts.inner_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)').show()
+    >>> (df1.ts.inner_join(df2, sql_on = '(LHS.id == RHS.id) & 
+    >>>                    (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
     +---+----+----+----+------+---+
     | id|name|dept|id_y|dept_y|age|
     +---+----+----+----+------+---+
@@ -1729,7 +1784,8 @@ class acc_on_pyspark():
     |  2| SDE|  jack|  10|
     +---+----+------+----+
 
-    >>> df1.ts.full_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)').show()
+    >>> (df1.ts.full_join(df2, sql_on = '(LHS.id == RHS.id) & 
+    >>>                   (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
     +----+------+----+----+------+----+
     |  id|  name|dept|id_y|dept_y| age|
     +----+------+----+----+------+----+
@@ -1815,7 +1871,8 @@ class acc_on_pyspark():
     |  1|  PM|  jack|
     +---+----+------+
 
-    >>> df1.ts.anti_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)').show()
+    >>> (df1.ts.anti_join(df2, sql_on = '(LHS.id == RHS.id) & 
+                          (LHS.dept == RHS.dept) & (RHS.age < 30)').show())
     +---+------+----+
     | id|  name|dept|
     +---+------+----+
@@ -1907,7 +1964,8 @@ class acc_on_pyspark():
     # |  2| SDE|jack|
     # +---+----+----+
 
-    >>> df1.ts.semi_join(df2, sql_on = '(LHS.id == RHS.id) & (LHS.dept == RHS.dept) & (RHS.age < 30)').show()
+    >>> (df1.ts.semi_join(df2, sql_on = '(LHS.id == RHS.id) & 
+                          (LHS.dept == RHS.dept) & (RHS.age < 30)')).show()
     +---+------+----+
     | id|  name|dept|
     +---+------+----+
@@ -2052,9 +2110,12 @@ class acc_on_pyspark():
     
     Examples
     --------
-    pen.ts.add_count(['species', 'sex']).show()
-    pen.ts.add_count('species', name = 'cnt').show()
-    pen.ts.add_count('species', wt = 'body_mass_g').show()
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> pen.ts.add_count(['species', 'sex']).show()
+    >>> pen.ts.add_count('species', name = 'cnt').show()
+    >>> pen.ts.add_count('species', wt = 'body_mass_g').show()
     '''
     cn = self._validate_column_names(column_names)
     
@@ -2162,11 +2223,14 @@ class acc_on_pyspark():
     
     Examples
     --------
-    pen.ts.slice_min(n = 2,
-                     order_by_column = 'bill_depth_mm',
-                     with_ties = False,
-                     by = ['species', 'sex']
-                     )
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> pen.ts.slice_min(n = 2,
+    >>>                  order_by_column = 'bill_depth_mm',
+    >>>                  with_ties = False,
+    >>>                  by = ['species', 'sex']
+    >>>                  )
     '''
     
     assert isinstance(n, int) and n > 0,\
@@ -2229,11 +2293,14 @@ class acc_on_pyspark():
     
     Examples
     --------
-    pen.ts.slice_max(n = 2,
-                     order_by_column = 'bill_depth_mm',
-                     with_ties = False,
-                     by = ['species', 'sex']
-                     )
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> pen.ts.slice_max(n = 2,
+    >>>                  order_by_column = 'bill_depth_mm',
+    >>>                  with_ties = False,
+    >>>                  by = ['species', 'sex']
+    >>>                  )
     '''
     assert isinstance(n, int) and n > 0,\
       "n should be a positive integer"
@@ -2283,11 +2350,14 @@ class acc_on_pyspark():
     
     Examples
     --------
-    df1 = pen.select(['species', 'island', 'bill_length_mm'])
-    df2 = pen.select(['species', 'island', 'bill_depth_mm'])
-    
-    df1.ts.rbind(df2).show()
-    df1.ts.rbind(df2, id = "id").show()
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> df1 = pen.select(['species', 'island', 'bill_length_mm'])
+    >>> df2 = pen.select(['species', 'island', 'bill_depth_mm'])
+    >>> 
+    >>> df1.ts.rbind(df2).show()
+    >>> df1.ts.rbind(df2, id = "id").show()
     '''
     assert isinstance(pyspark_df, pyspark.sql.dataframe.DataFrame),\
       "'pyspark_df' should be a pyspark dataframe"
@@ -2337,16 +2407,19 @@ class acc_on_pyspark():
     
     Examples
     --------
-    df1 = pen.ts.slice_max(n = 2,
-                           order_by_column = 'bill_length_mm',
-                           with_ties = False
-                           )
-    df2 = pen.ts.slice_max(n = 4,
-                           order_by_column = 'bill_length_mm',
-                           with_ties = False
-                           )
-    
-    df1.ts.union(df2).show()
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> df1 = pen.ts.slice_max(n = 2,
+    >>>                        order_by_column = 'bill_length_mm',
+    >>>                        with_ties = False
+    >>>                        )
+    >>> df2 = pen.ts.slice_max(n = 4,
+    >>>                        order_by_column = 'bill_length_mm',
+    >>>                        with_ties = False
+    >>>                        )
+    >>> 
+    >>> df1.ts.union(df2).show()
     '''
     assert isinstance(pyspark_df, pyspark.sql.dataframe.DataFrame),\
       "'pyspark_df' should be a pyspark dataframe"
@@ -2424,50 +2497,45 @@ class acc_on_pyspark():
     
     Examples
     --------
-    pen.ts.pivot_wider(id_cols = "island",
-                       names_from  = "sex,
-                       values_from = "bill_length_mm"
-                      )
-                              
-    
-    # All three inputs: 'id_cols', 'names_from', 'values_from' can be lists
-    pen.ts.pivot_wider(id_cols = ["island", "sex"], 
-                      names_from  = "species",
-                      values_from = "bill_length_mm"
-                      )
-                              
-    pen.ts.pivot_wider(
-        id_cols       = ["island", "sex"]
-        , names_from  = "species"
-        , values_from = ["bill_length_mm", "bill_depth_mm"]
-        )
-    
-    pen.ts.pivot_wider(id_cols = ["island", "sex"]
-                              , names_from  = ["species", "year"]
-                              , values_from = "bill_length_mm"
-                              )
-                              
-    pen.ts.pivot_wider(
-        id_cols       = ["island", "sex"]
-        , names_from  = ["species", "year"]
-        , values_from = ["bill_length_mm", "bill_depth_mm"]
-        )
-    
-    # when id_cols is empty, all columns except the columns from
-    # `names_from` and `values_from` are considered as id_cols
-    (pen.ts.select(['flipper_length_mm', 'body_mass_g'], include = False)
-            .pivot_wider(names_from    = ["species", "year"]
-                  , values_from = ["bill_length_mm", "bill_depth_mm"]
-                  )
-     )
-
-    # use some prefix for new columns
-    pen.ts.pivot_wider(id_cols       = "island"
-                              , names_from  = "sex"
-                              , values_from = "bill_length_mm"
-                              , names_prefix = "gender_"
-                              )
-    
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> pen.ts.pivot_wider(id_cols = "island",
+    >>>                    names_from  = "sex,
+    >>>                    values_from = "bill_length_mm"
+    >>>                   )
+    >>> # All three inputs: 'id_cols', 'names_from', 'values_from' can be lists
+    >>> pen.ts.pivot_wider(id_cols = ["island", "sex"], 
+    >>>                   names_from  = "species",
+    >>>                   values_from = "bill_length_mm"
+    >>>                   )
+    >>> pen.ts.pivot_wider(
+    >>>     id_cols       = ["island", "sex"]
+    >>>     , names_from  = "species"
+    >>>     , values_from = ["bill_length_mm", "bill_depth_mm"]
+    >>>     )
+    >>> pen.ts.pivot_wider(id_cols = ["island", "sex"]
+    >>>                           , names_from  = ["species", "year"]
+    >>>                           , values_from = "bill_length_mm"
+    >>>                           )
+    >>> pen.ts.pivot_wider(
+    >>>     id_cols       = ["island", "sex"]
+    >>>     , names_from  = ["species", "year"]
+    >>>     , values_from = ["bill_length_mm", "bill_depth_mm"]
+    >>>     )
+    >>> # when id_cols is empty, all columns except the columns from
+    >>> # `names_from` and `values_from` are considered as id_cols
+    >>> (pen.ts.select(['flipper_length_mm', 'body_mass_g'], include = False)
+    >>>         .pivot_wider(names_from    = ["species", "year"]
+    >>>               , values_from = ["bill_length_mm", "bill_depth_mm"]
+    >>>               )
+    >>>  )
+    >>> # use some prefix for new columns
+    >>> pen.ts.pivot_wider(id_cols       = "island"
+    >>>                           , names_from  = "sex"
+    >>>                           , values_from = "bill_length_mm"
+    >>>                           , names_prefix = "gender_"
+    >>>                           )
     '''
     
     cn = self.colnames
@@ -2636,29 +2704,30 @@ class acc_on_pyspark():
     
     Examples
     --------
-    df = (pen.ts.select(['species', 
-                        'bill_length_mm', 
-                        'bill_depth_mm', 
-                        'flipper_length_mm']
-                        )
-          )
-    df.pivot_longer(cols = ['bill_length_mm', 
-                            'bill_depth_mm',
-                            'flipper_length_mm']
-                    )
-
-    # pivot by specifying 'id' columns to obtain the same result as above
-    # this is helpful when there are many columns to melt
-    df.pivot_longer(cols = 'species',
-                   include = False
-                   )
-
-    # If you want to drop the rows corresponding to missing value in the result,
-    # set values_drop_na to True
-    df.pivot_longer(cols = ['bill_length_mm',
-                            'bill_depth_mm'],
-                    values_drop_na = True
-                    )            
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> df = (pen.ts.select(['species', 
+    >>>                     'bill_length_mm', 
+    >>>                     'bill_depth_mm', 
+    >>>                     'flipper_length_mm']
+    >>>                     )
+    >>>       )
+    >>> df.pivot_longer(cols = ['bill_length_mm', 
+    >>>                         'bill_depth_mm',
+    >>>                         'flipper_length_mm']
+    >>>                 )
+    >>> # pivot by specifying 'id' columns to obtain the same result as above
+    >>> # this is helpful when there are many columns to melt
+    >>> df.pivot_longer(cols = 'species',
+    >>>                include = False
+    >>>                )
+    >>> # If you want to drop the rows corresponding to missing value in the result,
+    >>> # set values_drop_na to True
+    >>> df.pivot_longer(cols = ['bill_length_mm',
+    >>>                         'bill_depth_mm'],
+    >>>                 values_drop_na = True
+    >>>                 )            
     '''
     # assertions
     cn = self.colnames
@@ -2906,7 +2975,7 @@ class acc_on_pyspark():
     # is colname column a struct?
     coltype = [x.dataType.typeName() for x in schema.fields][0]
     assert coltype == 'struct',\
-      "schema of colname column should be of type struct"
+      "schema of 'colname' column should be of type struct"
     
     # get names and types of structFields (columns within struct)
     json_obj        = json.loads(schema[colname].json())
@@ -2971,7 +3040,8 @@ class acc_on_pyspark():
     assert isinstance(value, str),\
       "'value' should be a string"
     assert not any([x in other_colnames for x in [name, value]]),\
-      "'name' and 'value' should be different from columns other than 'colname'"
+      ("'name' and 'value' should be different from columns "
+       " other than 'colname'")
     
     # rename non struct columns by prepending 'retain_'
     sel = [x + " as " + ("retain_" + x) for x in other_colnames]
@@ -3149,7 +3219,8 @@ class acc_on_pyspark():
 
     column_names : string or list of strings, optional
       It specifies the columns to consider for null values. 
-      If a row has null values only in the specified columns, it will be dropped.
+      If a row has null values only in the specified columns,
+      it will be dropped.
 
     thresh : int, optional
       Number of non-null values required to keep a row. The default is None.
@@ -3161,54 +3232,39 @@ class acc_on_pyspark():
 
     Examples
     --------
-    from pyspark.sql import SparkSession 
-    import pyspark.sql.functions as F 
-    spark = SparkSession.builder.getOrCreate()
-    import pyspark
-    
-    from pyspark.sql.functions import col
-
-    # create a DataFrame with null values
-    data = [("Alice", 25, None), ("Bob", None, 80), (None, 30, 90)]
-    df = spark.createDataFrame(data, ["name", "age", "score"])
-
-    # drop rows with null values
-    df1 = df.ts.drop_na()
-    # Output
-    # +----+---+-----+
-    # |name|age|score|
-    # +----+---+-----+
-    # +----+---+-----+
-
-    # drop rows with null values in a specific column
-    df2 = df.ts.drop_na(column_names = ["age"])
-    # Output
-    # +-----+---+-----+
-    # | name|age|score|
-    # +-----+---+-----+
-    # |Alice| 25| null|
-    # | null| 30|   90|
-    # +-----+---+-----+
-
-    # drop rows with null values if all values are null.
-    df3 = df.ts.drop_na(how = "all")
-    # Output
-    # +-----+----+-----+
-    # | name| age|score|
-    # +-----+----+-----+
-    # |Alice|  25| null|
-    # |  Bob|null|   80|
-    # | null|  30|   90|
-    # +-----+----+-----+
-
-    # drop rows with less than 3 non-null values
-    df4 = df.ts.drop_na(thresh=3)
-    # Output
-    # +----+---+-----+
-    # |name|age|score|
-    # +----+---+-----+
-    # +----+---+-----+
-
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> # create a DataFrame with null values
+    >>> data = [("Alice", 25, None), ("Bob", None, 80), (None, 30, 90)]
+    >>> df = spark.createDataFrame(data, ["name", "age", "score"])
+    >>> # drop rows with null values
+    >>> df1 = df.ts.drop_na()
+    +----+---+-----+
+    |name|age|score|
+    +----+---+-----+
+    +----+---+-----+
+    >>> # drop rows with null values in a specific column
+    >>> df2 = df.ts.drop_na(column_names = ["age"])
+    +-----+---+-----+
+    | name|age|score|
+    +-----+---+-----+
+    |Alice| 25| null|
+    | null| 30|   90|
+    +-----+---+-----+
+    >>> # drop rows with null values if all values are null.
+    >>> df3 = df.ts.drop_na(how = "all")
+    +-----+----+-----+
+    | name| age|score|
+    +-----+----+-----+
+    |Alice|  25| null|
+    |  Bob|null|   80|
+    | null|  30|   90|
+    +-----+----+-----+
+    >>> # drop rows with less than 3 non-null values
+    >>> df4 = df.ts.drop_na(thresh=3)
+    +----+---+-----+
+    |name|age|score|
+    +----+---+-----+
+    +----+---+-----+
     '''
     assert how in ["any", "all"],\
       "how should be one among 'any' or 'all'"
@@ -3219,10 +3275,11 @@ class acc_on_pyspark():
     if column_names is not None:
       column_names = self._validate_column_names(column_names)
 
-    return self.__data.dropna(subset = column_names,
-                              how = how,
-                              thresh = thresh,
-                              )
+    res = self.__data.dropna(subset = column_names,
+                             how = how,
+                             thresh = thresh,
+                             )
+    return res
 
   # alias for drop_na
   drop = drop_na
@@ -3234,12 +3291,12 @@ class acc_on_pyspark():
     Parameters
     ----------
     value: dict or a scalar or an empty list
-          When a dict, key should be a column name and value should be the
-          value to replace by missing values of the column
-          When a scalar or an empty list, 
-          missing values of all columns will be replaced with value. 
-          A scalar value could be a string, a numeric value(int, float), 
-          or a boolean value.
+      When a dict, key should be a column name and value should be the
+      value to replace by missing values of the column
+      When a scalar or an empty list, 
+      missing values of all columns will be replaced with value. 
+      A scalar value could be a string, a numeric value(int, float), 
+      or a boolean value.
 
     Returns
     -------
@@ -3247,40 +3304,32 @@ class acc_on_pyspark():
 
     Examples
     --------
-    from pyspark.sql import SparkSession 
-    import pyspark.sql.functions as F 
-    spark = SparkSession.builder.getOrCreate()
-    import pyspark
-
-    # create a DataFrame with null values
-    data = [("Alice", 25, None, [20, 30, 40]), 
-            ("Bob", None, 80, [10, 20, 30]), 
-            (None, 30, 90 , None)
-            ]
-    df = spark.createDataFrame(data, ["name", "age", "score", "marks"])
-    # +-----+----+-----+------------+
-    # | name| age|score|       marks|
-    # +-----+----+-----+------------+
-    # |Alice|  25| null|[20, 30, 40]|
-    # |  Bob|null|   80|[10, 20, 30]|
-    # | null|  30|   90|        null|
-    # +-----+----+-----+------------+
-
-    # replace null values with a dictionary of column names and values
-    df2 = df.ts.replace_na({"name": "A", "score": 25, "marks": []})
-    # Output
-    # +-----+----+-----+------------+
-    # | name| age|score|       marks|
-    # +-----+----+-----+------------+
-    # |Alice|  25|   25|[20, 30, 40]|
-    # |  Bob|null|   80|[10, 20, 30]|
-    # |    A|  30|   90|          []|
-    # +-----+----+-----+------------+
-    assert df2.select("name").collect()[2][0] == "A"
-    assert df2.select("marks").collect()[2][0] == []
-
+    >>> import tidypyspark.tidypyspark_class as ts
+    >>> from tidypyspark.datasets import get_penguins_path
+    >>> pen = spark.read.csv(get_penguins_path(), header = True, inferSchema = True)
+    >>> # create a DataFrame with null values
+    >>> data = [("Alice", 25, None, [20, 30, 40]), 
+    >>>         ("Bob", None, 80, [10, 20, 30]), 
+    >>>         (None, 30, 90 , None)
+    >>>         ]
+    >>> df = spark.createDataFrame(data, ["name", "age", "score", "marks"])
+    +-----+----+-----+------------+
+    | name| age|score|       marks|
+    +-----+----+-----+------------+
+    |Alice|  25| null|[20, 30, 40]|
+    |  Bob|null|   80|[10, 20, 30]|
+    | null|  30|   90|        null|
+    +-----+----+-----+------------+
+    >>> # replace null values with a dictionary of column names and values
+    >>> df2 = df.ts.replace_na({"name": "A", "score": 25, "marks": []})
+    +-----+----+-----+------------+
+    | name| age|score|       marks|
+    +-----+----+-----+------------+
+    |Alice|  25|   25|[20, 30, 40]|
+    |  Bob|null|   80|[10, 20, 30]|
+    |    A|  30|   90|          []|
+    +-----+----+-----+------------+
     '''
-
     df = self.__data
 
     # Get the datatypes of the columns in the dataframe.
@@ -3291,14 +3340,10 @@ class acc_on_pyspark():
     # If replace_value is a scalar, then fillna with it.
     if np.isscalar(value):
       df = df.fillna(value, subset = df.columns)
-    
     elif isinstance(value, dict):
-
       for col_name, value in value.items():
-
         # If the value is a list, then it should be an empty list.
         if isinstance(value, list):
-          
           # If the value is an empty list, then replace null values 
           # with an empty array.
           df = df.withColumn(col_name, 
@@ -3309,7 +3354,6 @@ class acc_on_pyspark():
           df = df.fillna(value, subset = [col_name])
 
     elif isinstance(value, list):
-      
       for col in df.columns:
         df = df.withColumn(col, 
                            F.when(F.col(col).isNull(), F.array()
