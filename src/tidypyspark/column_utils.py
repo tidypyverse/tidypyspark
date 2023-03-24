@@ -23,10 +23,10 @@ def ifelse(condition, yes, no):
 
   Examples
   --------
-  from pyspark.sql import SparkSession 
-  import pyspark.sql.functions as F 
-  spark = SparkSession.builder.getOrCreate()
-  import pyspark
+  >>> from pyspark.sql import SparkSession 
+  >>> import pyspark.sql.functions as F 
+  >>> spark = SparkSession.builder.getOrCreate()
+  >>> import pyspark
 
   >>> df = spark.createDataFrame([("a", 1), ("b", 2), ("c", 3)],
                               ["letter", "number"]
@@ -54,7 +54,7 @@ def ifelse(condition, yes, no):
   |     c|     3|         0|
   +------+------+----------+
   '''
-  
+
   return F.when(condition, yes).otherwise(no)
 
 def case_when(list_of_tuples, default = None):
@@ -76,9 +76,15 @@ def case_when(list_of_tuples, default = None):
 
   Examples:
   ----------
+  >>> from pyspark.sql import SparkSession 
+  >>> import pyspark.sql.functions as F 
+  >>> spark = SparkSession.builder.getOrCreate()
+  >>> import pyspark
+
   >>> df = spark.createDataFrame([("a", 1), ("b", 2), ("c", 3)], 
                                  ["letter", "number"]
                                 )
+  >>> df.show()
   +------+------+
   |letter|number|
   +------+------+

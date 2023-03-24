@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>tidypyspark.column_utils &mdash; tidypyspark  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            tidypyspark
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">tidypyspark</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">tidypyspark.column_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for tidypyspark.column_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pyspark.sql.functions</span> <span class="k">as</span> <span class="nn">F</span>
+
+<div class="viewcode-block" id="ifelse"><a class="viewcode-back" href="../../autoapi/tidypyspark/column_utils/index.html#tidypyspark.column_utils.ifelse">[docs]</a><span class="k">def</span> <span class="nf">ifelse</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="n">yes</span><span class="p">,</span> <span class="n">no</span><span class="p">):</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">  Vectorized if and else statement.</span>
+<span class="sd">  ifelse returns a value with the same shape as condition which is filled with </span>
+<span class="sd">  elements selected from either yes or no depending on whether the element of</span>
+<span class="sd">  condition is TRUE or FALSE.</span>
+
+<span class="sd">  Parameters</span>
+<span class="sd">  ----------</span>
+<span class="sd">  condition: expression or pyspark col</span>
+<span class="sd">      Should evaluate to a boolean list/array/Series</span>
+<span class="sd">  yes: expression or list/array/Series</span>
+<span class="sd">      Should evaluate to a pyspark col for true elements of condition.</span>
+<span class="sd">  no: expression or list/array/Series</span>
+<span class="sd">      Should evaluate to a pyspark col for false elements of condition.</span>
+
+<span class="sd">  Returns</span>
+<span class="sd">  -------</span>
+<span class="sd">  pyspark col</span>
+
+<span class="sd">  Examples</span>
+<span class="sd">  --------</span>
+<span class="sd">  &gt;&gt;&gt; from pyspark.sql import SparkSession </span>
+<span class="sd">  &gt;&gt;&gt; import pyspark.sql.functions as F </span>
+<span class="sd">  &gt;&gt;&gt; spark = SparkSession.builder.getOrCreate()</span>
+<span class="sd">  &gt;&gt;&gt; import pyspark</span>
+
+<span class="sd">  &gt;&gt;&gt; df = spark.createDataFrame([(&quot;a&quot;, 1), (&quot;b&quot;, 2), (&quot;c&quot;, 3)],</span>
+<span class="sd">                              [&quot;letter&quot;, &quot;number&quot;]</span>
+<span class="sd">                            )</span>
+<span class="sd">  &gt;&gt;&gt; df.show()</span>
+<span class="sd">  +------+------+</span>
+<span class="sd">  |letter|number|</span>
+<span class="sd">  +------+------+</span>
+<span class="sd">  |     a|     1|</span>
+<span class="sd">  |     b|     2|</span>
+<span class="sd">  |     c|     3|</span>
+<span class="sd">  +------+------+</span>
+
+<span class="sd">  &gt;&gt;&gt; df.withColumn(&quot;new_number&quot;,</span>
+<span class="sd">                    ifelse(F.col(&quot;number&quot;) == 1, </span>
+<span class="sd">                           F.lit(10), </span>
+<span class="sd">                           F.lit(0)</span>
+<span class="sd">                           )</span>
+<span class="sd">                    ).show()</span>
+<span class="sd">  +------+------+----------+</span>
+<span class="sd">  |letter|number|new_number|</span>
+<span class="sd">  +------+------+----------+</span>
+<span class="sd">  |     a|     1|        10|</span>
+<span class="sd">  |     b|     2|         0|</span>
+<span class="sd">  |     c|     3|         0|</span>
+<span class="sd">  +------+------+----------+</span>
+<span class="sd">  &#39;&#39;&#39;</span>
+
+  <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="n">yes</span><span class="p">)</span><span class="o">.</span><span class="n">otherwise</span><span class="p">(</span><span class="n">no</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="case_when"><a class="viewcode-back" href="../../autoapi/tidypyspark/column_utils/index.html#tidypyspark.column_utils.case_when">[docs]</a><span class="k">def</span> <span class="nf">case_when</span><span class="p">(</span><span class="n">list_of_tuples</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Implements a case_when function using PySpark.</span>
+<span class="sd">  </span>
+<span class="sd">  Parameters:</span>
+<span class="sd">  ----------</span>
+<span class="sd">    list_of_tuples (list): </span>
+<span class="sd">      A list of tuples, where each tuple represents a condition </span>
+<span class="sd">      and its corresponding value.</span>
+<span class="sd">    default (optional): </span>
+<span class="sd">    The default value to use when no conditions are met. Defaults to None.</span>
+<span class="sd">      </span>
+<span class="sd">  Returns:</span>
+<span class="sd">  ----------</span>
+<span class="sd">    PySpark Column: A PySpark column representing the case_when expression.</span>
+
+<span class="sd">  Examples:</span>
+<span class="sd">  ----------</span>
+<span class="sd">  &gt;&gt;&gt; from pyspark.sql import SparkSession </span>
+<span class="sd">  &gt;&gt;&gt; import pyspark.sql.functions as F </span>
+<span class="sd">  &gt;&gt;&gt; spark = SparkSession.builder.getOrCreate()</span>
+<span class="sd">  &gt;&gt;&gt; import pyspark</span>
+
+<span class="sd">  &gt;&gt;&gt; df = spark.createDataFrame([(&quot;a&quot;, 1), (&quot;b&quot;, 2), (&quot;c&quot;, 3)], </span>
+<span class="sd">                                 [&quot;letter&quot;, &quot;number&quot;]</span>
+<span class="sd">                                )</span>
+<span class="sd">  &gt;&gt;&gt; df.show()</span>
+<span class="sd">  +------+------+</span>
+<span class="sd">  |letter|number|</span>
+<span class="sd">  +------+------+</span>
+<span class="sd">  |     a|     1|</span>
+<span class="sd">  |     b|     2|</span>
+<span class="sd">  |     c|     3|</span>
+<span class="sd">  +------+------+</span>
+
+<span class="sd">  &gt;&gt;&gt; df.withColumn(&quot;new_number&quot;,</span>
+<span class="sd">                case_when([(F.col(&quot;number&quot;) == 1, F.lit(10)),</span>
+<span class="sd">                            (F.col(&quot;number&quot;) == 1, F.lit(20)),</span>
+<span class="sd">                            (F.col(&quot;number&quot;) == 3, F.lit(30))],</span>
+<span class="sd">                            default = F.lit(0)</span>
+<span class="sd">                          )</span>
+<span class="sd">                ).show()</span>
+<span class="sd">  +------+------+----------+</span>
+<span class="sd">  |letter|number|new_number|</span>
+<span class="sd">  +------+------+----------+</span>
+<span class="sd">  |     a|     1|        10|</span>
+<span class="sd">  |     b|     2|         0|</span>
+<span class="sd">  |     c|     3|        30|</span>
+<span class="sd">  +------+------+----------+</span>
+
+<span class="sd">  &quot;&quot;&quot;</span>
+  
+  <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">list_of_tuples</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span> \
+    <span class="s2">&quot;list_of_tuples should be a list of tuples&quot;</span>
+
+  <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">list_of_tuples</span><span class="p">]),</span>\
+    <span class="s2">&quot;list_of_tuples should be a list of tuples&quot;</span>
+
+  <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">list_of_tuples</span><span class="p">]),</span>\
+    <span class="s2">&quot;list_of_tuples should be a list of tuples of length 2&quot;</span>
+  
+  <span class="c1"># Create a list of PySpark expressions for each condition in list_of_tuples</span>
+  <span class="n">conditions</span> <span class="o">=</span> <span class="p">([</span><span class="n">F</span><span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span><span class="n">value</span><span class="p">)</span> 
+                <span class="k">for</span> <span class="n">condition</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="n">list_of_tuples</span><span class="p">]</span>
+               <span class="p">)</span>
+  
+  <span class="c1"># Define a pyspark expression that checks conditions in order and returns</span>
+  <span class="c1"># the corresponding value if the condition is met. If no conditions are met,</span>
+  <span class="c1"># return the default value.</span>
+  <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">case_when_expression</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">coalesce</span><span class="p">(</span><span class="o">*</span><span class="n">conditions</span><span class="p">)</span>
+  <span class="k">else</span><span class="p">:</span>
+    <span class="n">case_when_expression</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">coalesce</span><span class="p">(</span><span class="o">*</span><span class="n">conditions</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+  
+  <span class="k">return</span> <span class="n">case_when_expression</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Srikanth Komala sheshachala.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
