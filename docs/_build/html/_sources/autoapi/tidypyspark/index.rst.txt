@@ -21,6 +21,7 @@ Submodules
 
    _unexported_utils/index.rst
    accessor_class/index.rst
+   column_utils/index.rst
    datasets/index.rst
    tidypyspark_class/index.rst
 

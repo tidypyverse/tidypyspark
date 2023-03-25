@@ -1,0 +1,122 @@
+:py:mod:`tidypyspark.column_utils`
+==================================
+
+.. py:module:: tidypyspark.column_utils
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   tidypyspark.column_utils.ifelse
+   tidypyspark.column_utils.case_when
+
+
+
+.. py:function:: ifelse(condition, yes, no)
+
+   Vectorized if and else statement.
+   ifelse returns a value with the same shape as condition which is filled with
+   elements selected from either yes or no depending on whether the element of
+   condition is TRUE or FALSE.
+
+   :param condition: Should evaluate to a boolean list/array/Series
+   :type condition: expression or pyspark col
+   :param yes: Should evaluate to a pyspark col for true elements of condition.
+   :type yes: expression or list/array/Series
+   :param no: Should evaluate to a pyspark col for false elements of condition.
+   :type no: expression or list/array/Series
+
+   :rtype: pyspark col
+
+   .. rubric:: Examples
+
+   >>> from pyspark.sql import SparkSession
+   >>> import pyspark.sql.functions as F
+   >>> spark = SparkSession.builder.getOrCreate()
+   >>> import pyspark
+
+   >>> df = spark.createDataFrame([("a", 1), ("b", 2), ("c", 3)],
+                               ["letter", "number"]
+                             )
+   >>> df.show()
+   +------+------+
+   |letter|number|
+   +------+------+
+   |     a|     1|
+   |     b|     2|
+   |     c|     3|
+   +------+------+
+
+   >>> df.withColumn("new_number",
+                     ifelse(F.col("number") == 1,
+                            F.lit(10),
+                            F.lit(0)
+                            )
+                     ).show()
+   +------+------+----------+
+   |letter|number|new_number|
+   +------+------+----------+
+   |     a|     1|        10|
+   |     b|     2|         0|
+   |     c|     3|         0|
+   +------+------+----------+
+
+
+.. py:function:: case_when(list_of_tuples, default=None)
+
+   Implements a case_when function using PySpark.
+
+   Parameters:
+   ----------
+     list_of_tuples (list):
+       A list of tuples, where each tuple represents a condition
+       and its corresponding value.
+     default (optional):
+     The default value to use when no conditions are met. Defaults to None.
+
+   Returns:
+   ----------
+     PySpark Column: A PySpark column representing the case_when expression.
+
+   Examples:
+   ----------
+   >>> from pyspark.sql import SparkSession
+   >>> import pyspark.sql.functions as F
+   >>> spark = SparkSession.builder.getOrCreate()
+   >>> import pyspark
+
+   >>> df = spark.createDataFrame([("a", 1), ("b", 2), ("c", 3)],
+                                  ["letter", "number"]
+                                 )
+   >>> df.show()
+   +------+------+
+   |letter|number|
+   +------+------+
+   |     a|     1|
+   |     b|     2|
+   |     c|     3|
+   +------+------+
+
+   >>> df.withColumn("new_number",
+                 case_when([(F.col("number") == 1, F.lit(10)),
+                             (F.col("number") == 1, F.lit(20)),
+                             (F.col("number") == 3, F.lit(30))],
+                             default = F.lit(0)
+                           )
+                 ).show()
+   +------+------+----------+
+   |letter|number|new_number|
+   +------+------+----------+
+   |     a|     1|        10|
+   |     b|     2|         0|
+   |     c|     3|        30|
+   +------+------+----------+
+
+
+
