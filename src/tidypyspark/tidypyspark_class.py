@@ -732,11 +732,12 @@ class acc_on_pyspark():
       win = self._create_windowspec(order_by = order_by)
       rank_colname = _generate_new_string(self.colnames)
       
-      res = (self.__data
-                 .withColumn(rank_colname, F.row_number().over(win))
-                 .dropDuplicates(cn + [rank_colname])
-                 .drop(rank_colname)
-                 )
+      res = (data
+              .withColumn('rank_colname', F.row_number().over(win))
+              .orderBy(F.col('rank_colname'))
+              .dropDuplicates(cn)
+              .drop(rank_colname)
+              )
         
     if not keep_all:
       res = res.select(*cn)
