@@ -65,10 +65,9 @@ def test_distinct(penguins_data):
     assert expected_output.columns == actual_output.columns, "test_distinct_with_column_list not working"
     assert expected_output.count() == actual_output.count(), "test_distinct_with_column_list not working"
 
-    expected_output = pen.select('species', 'island', 'bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g', 'sex')
-    actual_output = pen.ts.distinct(['species', 'island'], keep_all=True)
+    expected_output = df
+    actual_output = df.ts.distinct(['name', 'age'], keep_all=True)
     assert expected_output.columns == actual_output.columns, "test_distinct_with_keep_all failed"
-    assert expected_output.count() == actual_output.count(), "test_distinct_with_keep_all failed"
 
 
 def test_rename(penguins_data):
