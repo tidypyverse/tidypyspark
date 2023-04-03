@@ -735,8 +735,8 @@ class acc_on_pyspark():
       res = (self.__data
               .withColumn('rank_colname', F.row_number().over(win))
               .orderBy(F.col('rank_colname'))
+              .drop(F.col('rank_colname'))
               .dropDuplicates(cn)
-              .drop(rank_colname)
               )
         
     if not keep_all:
