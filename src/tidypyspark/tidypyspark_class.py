@@ -733,10 +733,11 @@ class acc_on_pyspark():
       rank_colname = _generate_new_string(self.colnames)
       
       res = (self.__data
-                 .withColumn(rank_colname, F.row_number().over(win))
-                 .dropDuplicates(cn + [rank_colname])
-                 .drop(rank_colname)
-                 )
+              .withColumn('rank_colname', F.row_number().over(win))
+              .orderBy(F.col('rank_colname'))
+              .drop(F.col('rank_colname'))
+              .dropDuplicates(cn)
+              )
         
     if not keep_all:
       res = res.select(*cn)
