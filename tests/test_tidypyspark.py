@@ -1632,3 +1632,43 @@ def test_replace_na():
   assert df2.select("marks").collect()[2][0] == []
 
   spark.stop()
+  
+  
+ def test_distinct(penguins_data):
+  from pyspark.sql import SparkSession 
+  import pyspark.sql.functions as F 
+  spark = SparkSession.builder.getOrCreate()
+  import pandas as  pd
+  import pyspark
+  pen = spark.read.csv(penguins_data, header=True, inferSchema = True)
+
+
+  # create a DataFrame with null values
+  data = [(1,1,1,4), 
+          (1,3,2,3), 
+          (2,3,3,2), 
+          (2,1,4,1)
+          ]
+  df = spark.createDataFrame(data, ["name", "age", "score", "marks"])
+  expected_output = pd.DataFrame(columns=["name", "age", "score", "marks"], data = [[1,1,1,4],[2,3,3,2]] )
+  actual_output = df.ts.distinct(column_names = ["name"], order_by = ["score", ("marks", "desc")], keep_all=True).toPandas()
+  assert actual_output.compare(expected_output, keep_equal = False).shape[0] == 0, "order by clause in distinct is not working"
+
+
+
+
+  expected_output = pen.select('island').distinct()
+  actual_output = pen.ts.distinct('island')
+  assert expected_output.columns == actual_output.columns, "test_distinct_with_column_name not working"
+  assert expected_output.count() ==  actual_output.count(), "test_distinct_with_column_name not working"
+        
+  expected_output = self.pen.select('species', 'island').distinct()
+  actual_output = self.ts.distinct(['species', 'island'])
+  assert expected_output.columns == actual_output.columns, "test_distinct_with_column_list not working"
+  assert expected_output.count() == actual_output.count(), "test_distinct_with_column_list not working"
+    
+  expected_output = self.pen.select('species', 'island', 'bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g', 'sex')
+  actual_output = self.ts.distinct(['species', 'island'], keep_all=True)
+  assert expected_output.columns == actual_output.columns, "test_distinct_with_keep_all failed"
+  assert expected_output.count() == actual_output.count(), "test_distinct_with_keep_all failed"
+
